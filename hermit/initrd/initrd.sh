@@ -124,6 +124,8 @@ done
 echo "[INITRAMFS] Copy shared libraries from host"
 ln -s lib lib64
 cp -L $DEPENDENCIES lib/
+#cp -Lv /lib/ld-* lib/
+#cp -v ../lib/* lib/
 
 echo "[INITRAMFS] Add /init"
 cat <<EOF > init
@@ -154,4 +156,4 @@ find . -print0 | cpio --null -o --format=newc > "$OUTPUT_INITRAMFS" 2> /dev/null
 ######## Clean up ########
 
 echo "Cleaning up ..."
-rm -r "${INITRAMFS_BUILDDIR}"
+#rm -r "${INITRAMFS_BUILDDIR}"
