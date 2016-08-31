@@ -426,7 +426,7 @@ isrsyscall:
     ; cli
 
     ; only called from user space => get kernel-level selector
-    swapgs
+	;swapgs
 
     ; get kernel stack
     xchg rsp, [gs:kernel_stack]
@@ -486,7 +486,7 @@ isrsyscall:
     mov rsp, [rsp]
 
     ; set user-level selector
-    swapgs
+	;swapgs
 
     ; EFLAGS (and IF flag) will be restored by sysret
     ; sti
@@ -596,7 +596,7 @@ Lgo2:
     ; do we interrupt user-level code?
     cmp QWORD [rsp+24+18*8], 0x08
     je short kernel_space1
-    swapgs  ; set GS to the kernel selector
+	;swapgs  ; set GS to the kernel selector
 kernel_space1:
 
     ; use the same handler for interrupts and exceptions
@@ -625,23 +625,23 @@ no_context_switch:
     ; do we interrupt user-level code?
     cmp QWORD [rsp+24+18*8], 0x08
     je short kernel_space2
-    swapgs  ; set GS to the user-level selector
+	;swapgs  ; set GS to the user-level selector
 kernel_space2:
     ; restore fs / gs register
 global Lpatch2
 Lpatch2:
     jmp short Lwrfsgs    ; we patch later this jump to enable wrfsbase/wrgsbase
     pop r15
-    ;wrgsbase r15        ; currently, we don't use the gs register
+	;wrgsbase r15        ; currently, we don't use the gs register
     pop r15
     wrfsbase r15
     jmp short Lgo3
 Lwrfsgs:
-    ;mov ecx, MSR_GS_BASE
-    ;mov edx, DWORD [rsp+4]
-    ;mov eax, DWORD [rsp]
+    mov ecx, MSR_GS_BASE
+	mov edx, DWORD [rsp+4]
+	mov eax, DWORD [rsp]
     add rsp, 8
-    ;wrmsr               ; currently, we don't use the gs register
+	wrmsr               ; currently, we don't use the gs register
     mov ecx, MSR_FS_BASE
     mov edx, DWORD [rsp+4]
     mov eax, DWORD [rsp]

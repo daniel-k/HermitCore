@@ -55,6 +55,15 @@ extern "C" {
 #define TASK_FINISHED	4
 #define TASK_IDLE	5
 
+static const char* task_status_names[] = {
+    "TASK_INVALID",
+    "TASK_READY",
+    "TASK_RUNNING",
+    "TASK_BLOCKED",
+    "TASK_FINISHED"
+    "TASK_IDLE"
+};
+
 #define TASK_DEFAULT_FLAGS	0
 #define TASK_FPU_INIT		(1 << 0)
 #define TASK_FPU_USED		(1 << 1)

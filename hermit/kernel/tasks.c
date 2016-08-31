@@ -60,7 +60,7 @@ static task_t task_table[MAX_TASKS] = { \
 static spinlock_irqsave_t table_lock = SPINLOCK_IRQSAVE_INIT;
 
 #if MAX_CORES > 1
-static readyqueues_t readyqueues[MAX_CORES] = { \
+readyqueues_t readyqueues[MAX_CORES] = { \
 		[0 ... MAX_CORES-1]   = {NULL, NULL, 0, 0, 0, {[0 ... MAX_PRIO-2] = {NULL, NULL}}, {NULL, NULL}, SPINLOCK_IRQSAVE_INIT}};
 #else
 static readyqueues_t readyqueues[1] = {[0] = {task_table+0, NULL, 0, 0, 0, {[0 ... MAX_PRIO-2] = {NULL, NULL}}, {NULL, NULL}, SPINLOCK_IRQSAVE_INIT}};
@@ -240,8 +240,8 @@ void finish_task_switch(void)
 		if (old->status == TASK_FINISHED) {
 			/* cleanup task */
 			if (old->stack) {
-				kprintf("Release stack at 0x%zx\n", old->stack);
-				destroy_stack(old->stack, DEFAULT_STACK_SIZE);
+				kprintf("[%d] Release stack at 0x%zx\n", CORE_ID, old->stack);
+//				destroy_stack(old->stack, DEFAULT_STACK_SIZE);
 				old->stack = NULL;
 			}
 
@@ -251,7 +251,7 @@ void finish_task_switch(void)
 			}
 
 			if (old->ist_addr) {
-				destroy_stack(old->ist_addr, KERNEL_STACK_SIZE);
+//				destroy_stack(old->ist_addr, KERNEL_STACK_SIZE);
 				old->ist_addr = NULL;
 			}
 
@@ -261,8 +261,11 @@ void finish_task_switch(void)
 				readyqueues[core_id].fpu_owner = 0;
 
 			/* signalizes that this task could be reused */
+			kprintf("[%d] invalidate task %d\n", CORE_ID, old->id);
 			old->status = TASK_INVALID;
 		} else {
+			kprintf("[%d] re-enqueue task %d with status %s\n", CORE_ID, old->id, task_status_names[old->status]);
+
 			// re-enqueue old task
 			add_task_to_readyqueues(&readyqueues[core_id], old);
 		}
@@ -300,7 +303,7 @@ void NORETURN do_exit(int arg)
 
 	irq_nested_enable(flags);
 
-	kprintf("Kernel panic: scheduler found no valid task\n");
+	kprintf("[%d] Kernel panic: scheduler found no valid task\n", CORE_ID);
 	while(1) {
 		HALT;
 	}
@@ -729,7 +732,7 @@ int set_timer(uint64_t deadline)
 			readyqueues[core_id].timers.first = readyqueues[core_id].timers.last = curr_task;
 			curr_task->prev = curr_task->next = NULL;
 #ifdef DYNAMIC_TICKS
-			timer_deadline(deadline-get_clock_tick());
+			timer_deadline(deadline - get_clock_tick());
 #endif
 		} else {
 			while(tmp && (deadline >= tmp->timeout))
@@ -753,7 +756,7 @@ int set_timer(uint64_t deadline)
 				if (readyqueues[core_id].timers.first == tmp) {
 					readyqueues[core_id].timers.first = curr_task;
 #ifdef DYNAMIC_TICKS
-					timer_deadline(deadline-get_clock_tick());
+					timer_deadline(deadline - get_clock_tick());
 #endif
 				}
 			}
@@ -857,6 +860,11 @@ size_t** scheduler(void)
 
 		if ((curr_task->status == TASK_RUNNING) || (curr_task->status == TASK_IDLE))
 			goto get_task_out;
+
+//		struct state* idle_task = readyqueues[core_id].idle->last_stack_pointer;
+//		kprintf("[%d] prio=%i, schedule IDLE (rip=%p, rip2=%p)\n", CORE_ID, prio, idle_task->rip, *((size_t*)(idle_task+1)));
+//		readyqueues[core_id].old_task = curr_task;
+
 		curr_task = readyqueues[core_id].idle;
 		set_per_core(current_task, curr_task);
 	} else {

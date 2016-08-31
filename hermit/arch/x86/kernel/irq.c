@@ -91,7 +91,7 @@ extern void mmnif_irq(void);
  * This array is actually an array of function pointers. We use
  * this to handle custom IRQ handlers for a given IRQ
  */
-static void* irq_routines[MAX_HANDLERS] = {[0 ... MAX_HANDLERS-1] = NULL};
+static irq_handler_t irq_routines[MAX_HANDLERS] = {[0 ... MAX_HANDLERS-1] = NULL};
 static uint64_t irq_counter[MAX_CORES][MAX_HANDLERS] = {[0 ... MAX_CORES-1][0 ... MAX_HANDLERS-1] = 0};
 #ifdef MEASURE_IRQ
 static int go = 0;
@@ -263,6 +263,10 @@ int irq_init(void)
 	return 0;
 }
 
+#include <hermit/time.h>
+
+extern readyqueues_t readyqueues[MAX_CORES];
+
 /** @brief Default IRQ handler
  *
  * Each of the IRQ ISRs point to this function, rather than
@@ -294,27 +298,54 @@ size_t** irq_handler(struct state *s)
 		diff = rdtsc();
 #endif
 
+	if(BUILTIN_EXPECT(s->int_no >= MAX_HANDLERS, 0)) {
+		kprintf("[%d] Invalid IRQ number %d\n", CORE_ID, s->int_no);
+		return 0;
+	}
+
 	irq_counter[CORE_ID][s->int_no]++;
 
-	check_workqueues_in_irqhandler(s->int_no);
+	if((s->int_no != 32) && (s->int_no != 123)) {
+		kprintf("[%d] got IRQ %d\n", CORE_ID, s->int_no);
+	}
 
-	/*
-	 * Find out if we have a custom handler to run for this
-	 * IRQ and then finally, run it
-	 */
-	if (BUILTIN_EXPECT(s->int_no < MAX_HANDLERS, 1)) {
-		handler = irq_routines[s->int_no];
-		if (handler)
-			handler(s);
-		else
-			kprintf("Unhandle IRQ %d\n", s->int_no);
-	} else kprintf("Invalid interrupt number %d\n", s->int_no);
+	// Find out if we have a custom handler to run for this IRQ and run it
+	handler = irq_routines[s->int_no];
 
-	// timer interrupt?
-	if ((s->int_no == 32) || (s->int_no == 123))
-		ret = scheduler(); // switch to a new task
-	else if ((s->int_no >= 32) && (get_highest_priority() > per_core(current_task)->prio))
+	if (handler) {
+		handler(s);
+	} else {
+		kprintf("[%d] Unhandled IRQ %d\n", CORE_ID, s->int_no);
+	}
+
+	// Check if timers have expired that would unblock tasks
+	check_workqueues_in_irqhandler((int) s->int_no);
+
+	// remember which task is running for debug output later
+	const task_t* task = per_core(current_task);
+
+	if ((s->int_no == 32) || (s->int_no == 123)) {
+		// a timer interrupt may have caused unblocking of tasks
 		ret = scheduler();
+	} else if ((s->int_no >= 32) && (get_highest_priority() > per_core(current_task)->prio)) {
+		// there's a ready task with higher priority
+		ret = scheduler();
+	}
+
+	if(ret) {
+		kprintf("[%d] reschedule: %d -> %d\n", CORE_ID, task->id, per_core(current_task)->id);
+	} else {
+		if(s->int_no == 123) {
+			volatile size_t core_id = CORE_ID;
+			kprintf("[%d] Missed action in timer interrupt\n", CORE_ID);
+			const task_t* first = readyqueues[CORE_ID].timers.first;
+			if(first) {
+				kprintf("    Task %d has timeout %d, now %d\n", first->id, first->timeout, get_clock_tick());
+			} else {
+				kprintf("    No task in timer queue\n");
+			}
+		}
+	}
 
 	apic_eoi(s->int_no);
 
