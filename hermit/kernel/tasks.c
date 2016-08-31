@@ -209,15 +209,34 @@ int init_tls(void)
 	return 0;
 }
 
+static void add_task_to_readyqueues(readyqueues_t* readyqueues, task_t* task)
+{
+	// Idle task (prio=0) doesn't have a readyqueue
+	const uint8_t idx = task->prio - 1;
+
+	if (!readyqueues->queue[idx].first) {
+		readyqueues->queue[idx].first = readyqueues->queue[idx].last = task;
+		task->next = task->prev = NULL;
+	} else {
+		readyqueues->queue[idx].last->next = task;
+		readyqueues->queue[idx].last = task;
+		task->next = NULL;
+		task->prev = readyqueues->queue[idx].last;
+	}
+
+	readyqueues->prio_bitmap |= (1 << task->prio);
+}
+
 void finish_task_switch(void)
 {
 	task_t* old;
-	uint8_t prio;
 	const uint32_t core_id = CORE_ID;
 
 	spinlock_irqsave_lock(&readyqueues[core_id].lock);
 
 	if ((old = readyqueues[core_id].old_task) != NULL) {
+		readyqueues[core_id].old_task = NULL;
+
 		if (old->status == TASK_FINISHED) {
 			/* cleanup task */
 			if (old->stack) {
@@ -237,7 +256,6 @@ void finish_task_switch(void)
 			}
 
 			old->last_stack_pointer = NULL;
-			readyqueues[core_id].old_task = NULL;
 
 			if (readyqueues[core_id].fpu_owner == old->id)
 				readyqueues[core_id].fpu_owner = 0;
@@ -245,18 +263,8 @@ void finish_task_switch(void)
 			/* signalizes that this task could be reused */
 			old->status = TASK_INVALID;
 		} else {
-			prio = old->prio;
-			if (!readyqueues[core_id].queue[prio-1].first) {
-				old->next = old->prev = NULL;
-				readyqueues[core_id].queue[prio-1].first = readyqueues[core_id].queue[prio-1].last = old;
-			} else {
-				old->next = NULL;
-				old->prev = readyqueues[core_id].queue[prio-1].last;
-				readyqueues[core_id].queue[prio-1].last->next = old;
-				readyqueues[core_id].queue[prio-1].last = old;
-			}
-			readyqueues[core_id].old_task = NULL;
-			readyqueues[core_id].prio_bitmap |= (1 << prio);
+			// re-enqueue old task
+			add_task_to_readyqueues(&readyqueues[core_id], old);
 		}
 	}
 
