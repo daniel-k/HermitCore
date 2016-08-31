@@ -53,12 +53,90 @@ return that task_t variable which PI matches."""
 
 HermitTaskByIdFunc()
 
+
 def addressToSymbol(addr):
-    s = gdb.execute("info symbol 0x%x" % addr, to_string=True)
+    try:
+        s = gdb.execute("info symbol 0x%x" % int(addr), to_string=True)
+    except:
+        return ''
     if 'No symbol matches' in s:
         return ''
     else:
         return s.split(' in')[0].replace(' ', '')
+
+cachedSections = {}
+
+def parseSections(section_dict):
+    import re
+    regex = re.compile('\s*\[\d+\]\s+(?P<start>0x[0-9a-f]+)->(?P<end>0x[0-9a-f]+).+:\s+(?P<section>[\w._-]+)\s+(?P<attributes>[\w\s]+)')
+    sections = gdb.execute('maintenance info sections', to_string=True).split('\n')
+    for section in sections:
+        match = regex.match(section)
+        if match:
+            name = match.group('section')
+            start = match.group('start')
+            end = match.group('end')
+            attributes = match.group('attributes').split(' ')
+            if not name in section_dict:
+                section_dict[name] = {}
+            section_dict[name]['start'] = start
+            section_dict[name]['end'] = end
+            section_dict[name]['attributes'] = attributes
+
+def getMemoryAttributes(address):
+    if len(cachedSections) == 0:
+        parseSections(cachedSections)
+
+    try:
+        addr = int(address)
+    except:
+        return []
+
+    for name,section in cachedSections.items():
+        if (addr >= int(section['start'][2:], 16)) and (addr < int(section['end'][2:], 16)):
+           return section['attributes']
+
+    return []
+
+def getThreadByCoreId(id):
+    for inferiorThread in gdb.selected_inferior().threads():
+        # GDB starts indexing at 1
+        coreId = inferiorThread.num - 1
+        if coreId == id:
+            return inferiorThread
+
+def getTaskStatus(task):
+    status_desc = {1: 'RDY', 2: 'RUN', 3: 'BLK', 4: 'FIN', 5: 'IDL'}
+    return status_desc[int(task['status'])]
+
+def taskIsRunning(task):
+    if getTaskStatus(task) == 'RUN':
+        return True
+    if getTaskStatus(task) == 'IDL':
+        currentInferiorThread = gdb.selected_thread()
+
+        try:
+            getThreadByCoreId(task['last_core']).switch()
+            sym = addressToSymbol(gdb.parse_and_eval('$rsp'))
+            if 'boot_stack' in sym:
+
+                return True
+        finally:
+            currentInferiorThread.switch()
+
+    return False
+
+def coreInIrqHandler(coreId):
+    currThread = gdb.selected_thread()
+
+    try:
+        getThreadByCoreId(coreId).switch()
+        if 'irq_handler' in gdb.execute('bt', to_string=True):
+            return True
+        else:
+            return False
+    finally:
+        currThread.switch()
 
 class HermitPs(gdb.Command):
     """Dump Hermit tasks."""
@@ -70,9 +148,9 @@ class HermitPs(gdb.Command):
         # see include/hermit/task_types.h
         status_desc = {1: 'RDY', 2: 'RUN', 3: 'BLK', 4: 'FIN', 5: 'IDL'}
 
-        rowfmt = "{id:>3} | {status:^5} | {last_core:>3} | {prio:>4} | {stack:>10} | {rip:<28}\n"
+        rowfmt = "{id:>3} | {status:^6} | {last_core:>3} | {prio:>4} | {stack:>10} | {rip:<27}\n"
 
-        header = rowfmt.format(id='ID', status='STATE', last_core='CPU',
+        header = rowfmt.format(id='ID', status='STATUS', last_core='CPU',
                                prio='PRIO', stack='STACK',
                                rip='INSTRUCTION POINTER')
 
@@ -86,28 +164,55 @@ class HermitPs(gdb.Command):
 
             task_status = status_desc[int(task["status"])]
 
-            if task_status == 'RUN':
-                # switch to inferior thread (cpu) that this task is running on
-                for inferiorThread in inferior.threads():
-                    # GDB starts indexing at 1
-                    coreId = inferiorThread.num - 1
-                    if coreId == task['last_core']:
-                        inferiorThread.switch()
-                        break
+            rip = ''
 
-                # get instruction pointer and switch back
+            if taskIsRunning(task):
+
+                # switch to inferior thread (cpu) that this task is running on
+                getThreadByCoreId(task['last_core']).switch()
+
+                # get instruction pointer from running task and switch back
                 rip = str(gdb.parse_and_eval('$pc'))
                 currentInferiorThread.switch()
 
             else:
+                rollback = gdb.parse_and_eval('&rollback')
+
                 # find instruction pointer in saved stack
-                rip_addr = task['last_stack_pointer'] + 25
-                rip_val = int(rip_addr.dereference())
-                # try to resolve a symbol
-                rip_sym = addressToSymbol(rip_val)
-                rip = "0x%x" % rip_val
-                if rip_sym:
-                    rip += " <%s>" % rip_sym
+                rip_addr = task['last_stack_pointer'] + 20
+
+                try:
+                    rip_val = int(rip_addr.dereference())
+                except:
+                    rip = 'Stackpointer corrupted'
+
+
+                if rip_val == rollback:
+                    # state was pushed by switch_context(), so real rip
+                    # is above pseudo interrupt state
+                    rip_addr += 5
+                    try:
+                        rip_val = int(rip_addr.dereference())
+                    except:
+                        rip = 'Rollback to invalid address'
+
+                if not rip:
+                    rip = "%#x" % rip_val
+
+                    # try to resolve a symbol
+                    rip_sym = addressToSymbol(rip_val)
+                    if rip_sym:
+                        rip += " <%s>" % rip_sym
+
+                    if not 'CODE' in getMemoryAttributes(rip_val):
+                        rip += ' (corrupt, not exec)'
+
+                if not rip:
+                    rip = 'Stackpointer corrupted'
+            
+            if coreInIrqHandler(task['last_core']):
+                rip = 'IRQ handler running'
+
 
             gdb.write(rowfmt.format(
                 id=int(task["id"]),
@@ -117,6 +222,22 @@ class HermitPs(gdb.Command):
                 last_core=int(task['last_core']),
                 stack="{:#x}".format(int(task['stack']))
                 ))
+
+        currThread = gdb.selected_thread()
+        for core in gdb.selected_inferior().threads():
+            core.switch()
+            coreId = core.num - 1
+            if 'irq_handler' in gdb.execute('bt', to_string=True):
+                gdb.write(rowfmt.format(
+                    id='',
+                    status='IRQ',
+                    rip=str(gdb.parse_and_eval('$pc')),
+                    prio='',
+                    last_core=coreId,
+                    stack="-"
+                    ))
+        currThread.switch()
+
 
 HermitPs()
 
