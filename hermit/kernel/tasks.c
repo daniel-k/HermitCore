@@ -769,52 +769,59 @@ int set_timer(uint64_t deadline)
 
 void check_timers(void)
 {
-	uint32_t core_id = CORE_ID;
-	uint32_t prio;
-	uint64_t current_tick;
+	readyqueues_t* readyqueue = &readyqueues[CORE_ID];
+	spinlock_irqsave_lock(&readyqueue->lock);
 
-	spinlock_irqsave_lock(&readyqueues[core_id].lock);
+	// since IRQs are disabled, get_clock_tick() won't increase here
+	const uint64_t current_tick = get_clock_tick();
 
-        // check timers
-	current_tick = get_clock_tick();
-	while (readyqueues[core_id].timers.first && readyqueues[core_id].timers.first->timeout <= current_tick)
+	// remember first task to tell if list has changed
+	const task_t* first_task = readyqueue->timers.first;
+
+	// pop tasks from timer queue whose deadline has expired
+	task_t* task;
+	while ((task = readyqueue->timers.first) && (task->timeout <= current_tick))
 	{
-		task_t* task = readyqueues[core_id].timers.first;
-
 		// remove timer from queue
-		readyqueues[core_id].timers.first = readyqueues[core_id].timers.first->next;
-		if (readyqueues[core_id].timers.first) {
-			readyqueues[core_id].timers.first->prev = NULL;
-#ifdef DYNAMIC_TICKS
-			if (readyqueues[core_id].timers.first->timeout > get_clock_tick())
-				timer_deadline(readyqueues[core_id].timers.first->timeout-current_tick);
-#endif
-		} else  readyqueues[core_id].timers.last = NULL;
+		readyqueue->timers.first = readyqueue->timers.first->next;
+		if (readyqueue->timers.first) {
+			readyqueue->timers.first->prev = NULL;
+		} else {
+			readyqueue->timers.last = NULL;
+		}
+
 		task->flags &= ~TASK_TIMER;
 
 		// wakeup task
 		if (task->status == TASK_BLOCKED) {
+			kprintf("[%d] Unblock task %d\n", CORE_ID, task->id);
 			task->status = TASK_READY;
-			prio = task->prio;
+
+			// TODO: move this to add_task_to_readyqueues() and check other
+			//       occurences! (e.g. finish_task_switch())
 
 			// increase the number of ready tasks
-			readyqueues[core_id].nr_tasks++;
+			readyqueue->nr_tasks++;
 
-			// add task to the runqueue
-			if (!readyqueues[core_id].queue[prio-1].first) {
-				readyqueues[core_id].queue[prio-1].last = readyqueues[core_id].queue[prio-1].first = task;
-				task->next = task->prev = NULL;
-				readyqueues[core_id].prio_bitmap |= (1 << prio);
-			} else {
-				task->prev = readyqueues[core_id].queue[prio-1].last;
-				task->next = NULL;
-				readyqueues[core_id].queue[prio-1].last->next = task;
-				readyqueues[core_id].queue[prio-1].last = task;
-			}
+			add_task_to_readyqueues(readyqueue, task);
+		} else {
+			kprintf("[%d] Task %d's state unchanged: \n", CORE_ID, task->id, task->status);
 		}
 	}
 
-	spinlock_irqsave_unlock(&readyqueues[core_id].lock);
+#ifdef DYNAMIC_TICKS
+	const task_t* next_task = readyqueue->timers.first;
+
+	// If there is a task left in the queue, it's deadline cannot have expired
+	// because it would have been popped off the queue in the above while loop.
+	// In that case, set it's timer deadline if it has become head of the queue.
+	if(next_task && (next_task != first_task)) {
+		const uint64_t deadline = next_task->timeout - current_tick;
+		timer_deadline((uint32_t) deadline);
+	}
+#endif
+
+	spinlock_irqsave_unlock(&readyqueue->lock);
 }
 
 size_t** scheduler(void)
