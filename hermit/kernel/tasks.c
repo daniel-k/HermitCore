@@ -828,8 +828,8 @@ size_t** scheduler(void)
 {
 	task_t* orig_task;
 	task_t* curr_task;
-	const int32_t core_id = CORE_ID;
-	uint32_t prio;
+	const uint32_t core_id = CORE_ID;
+	uint64_t prio;
 
 	orig_task = curr_task = per_core(current_task);
 	curr_task->last_core = core_id;
@@ -849,8 +849,12 @@ size_t** scheduler(void)
 		set_per_core(current_task, curr_task);
 	}
 
-	prio = msb(readyqueues[core_id].prio_bitmap); // determines highest priority
-	if (prio > MAX_PRIO) {
+	// determine highest priority
+	prio = msb(readyqueues[core_id].prio_bitmap);
+
+	const int readyqueue_empty = prio > MAX_PRIO;
+	if (readyqueue_empty) {
+
 		if ((curr_task->status == TASK_RUNNING) || (curr_task->status == TASK_IDLE))
 			goto get_task_out;
 		curr_task = readyqueues[core_id].idle;
