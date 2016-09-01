@@ -36,6 +36,9 @@
 static volatile __thread int alive = 1;
 static volatile __thread int thread_id;
 
+pthread_barrier_t barrier;
+pthread_barrierattr_t attr;
+
 static void sighandler(int sig)
 {
 	printf("[%d] Received signal %d\n", thread_id, sig);
@@ -50,6 +53,10 @@ void* thread_func(void* arg)
 
 	// register signal handler
 	signal(16, sighandler);
+
+	// make sure all threads are running before main threads starts sending
+	// signals
+	pthread_barrier_wait(&barrier);
 
 	// stay here until signal received
 	while(alive);
@@ -70,6 +77,10 @@ int main(int argc, char** argv)
 	unsigned int i, param[thread_count];
 	int ret;
 
+	// if we send the signals too early some threads might not have registered
+	// a signal handler yet
+	pthread_barrier_init(&barrier, &attr, thread_count + 1);
+
 	for(i = 0; i < thread_count; i++) {
 		param[i] = i;
 		ret = pthread_create(threads+i, NULL, thread_func, (void*) &param[i]);
@@ -79,13 +90,14 @@ int main(int argc, char** argv)
 		} else printf("Create thread %d\n", i);
 	}
 
+	pthread_barrier_wait(&barrier);
+
 	for(i = 0; i < thread_count; i++) {
-		sys_msleep(500);
 		printf("Send signal to thread %d\n", i);
 		pthread_kill(threads[i], 16);
 	}
 
-	sys_msleep(1000);
+	sys_msleep(500);
 
 	printf("Wait for all threads to finish\n");
 	for(i = 0; i < thread_count; i++) {
