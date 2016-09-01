@@ -72,6 +72,7 @@ extern "C" {
 #define CPU_FEATURE_SSE4_2			(1 << 20)
 #define CPU_FEATURE_X2APIC			(1 << 21)
 #define CPU_FEATURE_MOVBE			(1 << 22)
+#define CPU_FEATURE_TSC_DEADLINE	(1 << 24)
 #define CPU_FEATURE_XSAVE			(1 << 26)
 #define CPU_FEATURE_OSXSAVE			(1 << 27)
 #define CPU_FEATURE_AVX				(1 << 28)
@@ -83,6 +84,9 @@ extern "C" {
 #define CPU_FEATURE_1GBHP			(1 << 26)
 #define CPU_FEATURE_RDTSCP			(1 << 27)
 #define CPU_FEATURE_LM				(1 << 29)
+
+// CPUID.80000001H:EAX feature list
+#define CPU_FEATURE_ARAT			(1 << 2)
 
 // feature list 0x00000007:0
 #define CPU_FEATURE_FSGSBASE			(1 << 0)
@@ -221,6 +225,7 @@ extern "C" {
 
 #define MSR_PPERF				0x0000064e
 #define MSR_PERF_LIMIT_REASONS			0x0000064f
+#define MSR_IA32_TSC_DEADLINE		0x000006e0
 #define MSR_PM_ENABLE				0x00000770
 #define MSR_HWP_CAPABILITIES			0x00000771
 #define MSR_HWP_REQUEST_PKG			0x00000772
@@ -265,6 +270,7 @@ extern "C" {
 typedef struct {
 	uint32_t feature1, feature2;
 	uint32_t feature3, feature4;
+	uint32_t feature5;
 	uint32_t addr_width;
 } cpu_info_t;
 
@@ -351,6 +357,10 @@ inline static uint32_t has_x2apic(void) {
 	return (cpu_info.feature2 & CPU_FEATURE_X2APIC);
 }
 
+inline static uint32_t has_tsc_deadline(void) {
+	return (cpu_info.feature2 & CPU_FEATURE_TSC_DEADLINE);
+}
+
 inline static uint32_t has_xsave(void) {
 	return (cpu_info.feature2 & CPU_FEATURE_XSAVE);
 }
@@ -382,6 +392,10 @@ inline static uint32_t has_avx2(void) {
 
 inline static uint32_t has_rdtscp(void) {
 	return (cpu_info.feature3 & CPU_FEATURE_RDTSCP);
+}
+
+inline static uint32_t has_arat(void) {
+	return (cpu_info.feature5 & CPU_FEATURE_ARAT);
 }
 
 /// clear TS bit in cr0

@@ -46,7 +46,7 @@ extern atomic_int32_t current_boot_id;
 
 extern void isrsyscall(void);
 
-cpu_info_t cpu_info = { 0, 0, 0, 0, 0};
+cpu_info_t cpu_info = { 0, 0, 0, 0, 0, 0};
 extern uint32_t cpu_freq;
 
 static void default_save_fpu_state(union fpu_state* state)
@@ -347,6 +347,10 @@ int cpu_detection(void) {
 
 		cpuid(0x80000001, &a, &b, &c, &cpu_info.feature3);
 		cpuid(0x80000008, &cpu_info.addr_width, &b, &c, &d);
+
+		if(level >= 6) {
+			cpuid(6, &cpu_info.feature5, &b, &c, &d);
+		}
 
 		/* Additional Intel-defined flags: level 0x00000007 */
         	if (level >= 0x00000007) {
