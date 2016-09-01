@@ -245,8 +245,10 @@ void shutdown_system(void);
 static inline void check_workqueues_in_irqhandler(int irq)
 {
 #ifdef DYNAMIC_TICKS
-	check_ticks();
+	if(irq > 0)
+		check_ticks();
 #endif
+
 	check_timers();
 
 	if (irq < 0) {

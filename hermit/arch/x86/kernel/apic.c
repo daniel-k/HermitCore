@@ -312,8 +312,40 @@ int apic_timer_is_running(void)
 	return 0;
 }
 
+int apic_timer_ticks_remaining(void)
+{
+	if (BUILTIN_EXPECT(apic_is_enabled() && apic_timer_is_running() && icr, 1)) {
+		return (int) (lapic_read(APIC_CCR) / icr);
+	}
+
+	return -1;
+}
+
+int apic_timer_tsc_deadline(uint64_t tsc)
+{
+	if (BUILTIN_EXPECT(apic_is_enabled() && has_tsc_deadline(), 1)) {
+		//kprintf("timer oneshot %ld\n", t);
+		lapic_write(APIC_LVT_T, 0x4007B);
+
+		mb();
+		wrmsr(MSR_IA32_TSC_DEADLINE, tsc);
+
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
 int apic_timer_deadline(uint32_t ticks)
 {
+//	if(has_tsc_deadline()) {
+
+//		const uint64_t diff_cycles = ((ticks+2) * get_cpu_frequency() * 1000000ULL) / (uint64_t) TIMER_FREQ;
+//		const uint64_t target_tsc = get_rdtsc() + diff_cycles;
+
+//		return apic_timer_tsc_deadline(target_tsc);
+//	}
+
 	if (BUILTIN_EXPECT(apic_is_enabled() && icr, 1)) {
 		//kprintf("timer oneshot %ld\n", t);
 

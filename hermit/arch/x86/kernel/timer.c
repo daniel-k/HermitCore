@@ -41,31 +41,61 @@
  * has been running for
  */
 DEFINE_PER_CORE(uint64_t, timer_ticks, 0);
+DEFINE_PER_CORE(uint64_t, timer_milliticks, 0);
 extern uint32_t cpu_freq;
 extern int32_t boot_processor;
 
 #ifdef DYNAMIC_TICKS
 DEFINE_PER_CORE(uint64_t, last_rdtsc, 0);
+
 uint64_t boot_tsc = 0;
+
+
+int timer_deadline(uint32_t t)
+{
+	kprintf("[%d] timer in: %d, now: %d\n", CORE_ID, t, get_clock_tick());
+//	check_ticks();
+	return apic_timer_deadline(t);
+}
+
+static spinlock_irqsave_t tick_locks[MAX_CORES] = {
+    [0 ... MAX_CORES-1] = SPINLOCK_IRQSAVE_INIT
+};
 
 void check_ticks(void)
 {
+//	spinlock_irqsave_t* lock = &tick_locks[CORE_ID];
+//	spinlock_irqsave_lock(lock);
+
 	// do we already know the cpu frequency? => if not, ignore this check
 	if (!cpu_freq)
 		return;
-
+	mb();
 	const uint64_t curr_rdtsc = has_rdtscp() ? rdtscp(NULL) : rdtsc();
-	rmb();
+	mb();
 
 	const uint64_t diff_cycles = curr_rdtsc - per_core(last_rdtsc);
 	const uint64_t cpu_freq_hz = 1000000ULL * (uint64_t) get_cpu_frequency();
-	const uint64_t diff_ticks = (diff_cycles * (uint64_t) TIMER_FREQ) / cpu_freq_hz;
 
-	if (diff_ticks > 0) {
-		set_per_core(timer_ticks, per_core(timer_ticks) + diff_ticks);
+	const uint64_t diff_milliticks = (diff_cycles * (uint64_t) TIMER_FREQ) / (cpu_freq_hz / 1000000);
+
+	if (diff_milliticks > 0) {
+
+		set_per_core(timer_milliticks, per_core(timer_milliticks) + diff_milliticks);
+		set_per_core(timer_ticks, per_core(timer_milliticks) / 1000000);
 		set_per_core(last_rdtsc, curr_rdtsc);
-		rmb();
+
+
+//		mb();
+//		set_per_core(timer_ticks, per_core(timer_ticks) + diff_ticks);
+//		mb();
+
+//		if(CORE_ID==0)
+//			kprintf("[%d] tick: %d\n", CORE_ID, timer_ticks);
 	}
+
+//	spinlock_irqsave_unlock(lock);
+
 }
 #endif
 
