@@ -266,6 +266,7 @@ int irq_init(void)
 #include <hermit/time.h>
 
 extern readyqueues_t readyqueues[MAX_CORES];
+void dump_queues(void);
 
 /** @brief Default IRQ handler
  *
@@ -305,7 +306,7 @@ size_t** irq_handler(struct state *s)
 
 	irq_counter[CORE_ID][s->int_no]++;
 
-	if((s->int_no != 32) && (s->int_no != 123)) {
+	if((s->int_no != 32)) {
 		kprintf("[%d] got IRQ %d\n", CORE_ID, s->int_no);
 	}
 
@@ -324,13 +325,21 @@ size_t** irq_handler(struct state *s)
 	// remember which task is running for debug output later
 	const task_t* task = per_core(current_task);
 
+
 	if ((s->int_no == 32) || (s->int_no == 123)) {
 		// a timer interrupt may have caused unblocking of tasks
+		kprintf("scheduler() @ timer\n");
+//		dump_queues();
 		ret = scheduler();
+//		dump_queues();
 	} else if ((s->int_no >= 32) && (get_highest_priority() > per_core(current_task)->prio)) {
+		kprintf("scheduler() @ priority\n");
+//		dump_queues();
 		// there's a ready task with higher priority
 		ret = scheduler();
+//		dump_queues();
 	}
+
 
 	if(ret) {
 		kprintf("[%d] reschedule: %d -> %d\n", CORE_ID, task->id, per_core(current_task)->id);
@@ -344,6 +353,7 @@ size_t** irq_handler(struct state *s)
 			} else {
 				kprintf("    No task in timer queue\n");
 			}
+			kprintf("    Ticks remaining next IRQ: %d\n", apic_timer_ticks_remaining());
 		}
 	}
 

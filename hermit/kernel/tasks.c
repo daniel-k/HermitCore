@@ -74,6 +74,16 @@ DEFINE_PER_CORE(uint32_t, __core_id, 0);
 extern const void boot_stack;
 extern const void boot_ist;
 
+
+void dump_task_list(task_list_t* list)
+{
+	task_t* task = list->first;
+	while(task) {
+		kprintf(" -> %d", task->id);
+		task = task->next;
+	}
+}
+
 /** @brief helper function for the assembly code to determine the current task
  * @return Pointer to the task_t structure of current task
  */
@@ -653,6 +663,7 @@ int wakeup_task(tid_t id)
 
 	if (task->status == TASK_BLOCKED) {
 		task->status = TASK_READY;
+		kprintf("[%d] Wakeup task %d\n", CORE_ID, task->id);
 		ret = 0;
 
 		spinlock_irqsave_lock(&readyqueues[core_id].lock);
@@ -734,6 +745,22 @@ int block_current_task(void)
 	return ret;
 }
 
+void dump_queues(void)
+{
+	for(int i = 0; i < MAX_PRIO - 1; i++) {
+		task_list_t* queue = &readyqueues[CORE_ID].queue[i];
+		if(queue && queue->first) {
+			kprintf("[%d] ready queue (prio %d)", CORE_ID, i+1);
+			dump_task_list(queue);
+			kprintf("\n");
+		}
+	}
+
+	kprintf("[%d] timer queue", CORE_ID);
+	dump_task_list(&readyqueues[CORE_ID].timers);
+	kprintf("\n");
+}
+
 int set_timer(uint64_t deadline)
 {
 	task_t* curr_task;
@@ -764,8 +791,10 @@ int set_timer(uint64_t deadline)
 			curr_task->prev->next = curr_task->next;
 		if (curr_task->next)
 			curr_task->next->prev = curr_task->prev;
+
 		if (readyqueues[core_id].queue[prio-1].first == curr_task)
 			readyqueues[core_id].queue[prio-1].first = curr_task->next;
+
 		if (readyqueues[core_id].queue[prio-1].last == curr_task) {
 			readyqueues[core_id].queue[prio-1].last = curr_task->prev;
 			if (!readyqueues[core_id].queue[prio-1].last)
@@ -782,6 +811,7 @@ int set_timer(uint64_t deadline)
 			readyqueues[core_id].timers.first = readyqueues[core_id].timers.last = curr_task;
 			curr_task->prev = curr_task->next = NULL;
 #ifdef DYNAMIC_TICKS
+			kprintf("set_timer1: ");
 			timer_deadline(deadline - get_clock_tick());
 #endif
 		} else {
@@ -806,6 +836,7 @@ int set_timer(uint64_t deadline)
 				if (readyqueues[core_id].timers.first == tmp) {
 					readyqueues[core_id].timers.first = curr_task;
 #ifdef DYNAMIC_TICKS
+					kprintf("set_timer2: ");
 					timer_deadline(deadline - get_clock_tick());
 #endif
 				}
@@ -814,6 +845,11 @@ int set_timer(uint64_t deadline)
 
 		spinlock_irqsave_unlock(&readyqueues[core_id].lock);
 	} else kprintf("Task is already blocked. No timer will be set!\n");
+
+	task_t* head = readyqueues[core_id].timers.first;
+	kprintf("[%d] new timer queue head: task %d timeout %d\n", CORE_ID, (head ? head->id : -1), (head ? head->timeout : -1));
+
+	dump_queues();
 
 	irq_nested_enable(flags);
 
@@ -870,6 +906,7 @@ void check_timers(void)
 	// In that case, set it's timer deadline if it has become head of the queue.
 	if(next_task && (next_task != first_task)) {
 		const uint64_t deadline = next_task->timeout - current_tick;
+		kprintf("check_timers: ");
 		timer_deadline((uint32_t) deadline);
 	}
 #endif
