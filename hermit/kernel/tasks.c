@@ -564,6 +564,74 @@ int create_kernel_task(tid_t* id, entry_point_t ep, void* args, uint8_t prio)
 	return create_task(id, ep, args, prio, CORE_ID);
 }
 
+void task_list_remove_task(task_list_t* list, task_t* task)
+{
+	if (task->prev)
+		task->prev->next = task->next;
+
+	if (task->next)
+		task->next->prev = task->prev;
+
+	if (list->last == task)
+		list->last = task->prev;
+
+	if (list->first == task)
+		list->first = task->next;
+}
+
+void task_list_enqueue(task_list_t* list, task_t* task)
+{
+	if(BUILTIN_EXPECT((task != NULL) && (list != NULL), 0)) {
+		return;
+	}
+
+	if (list->last) {
+		task->prev = list->last;
+		task->next = NULL;
+		list->last->next = task;
+		list->last = task;
+	} else {
+		list->last = list->first = task;
+		task->next = task->prev = NULL;
+	}
+}
+
+void update_timer(task_t* first)
+{
+	if(first) {
+		if(first->timeout > get_clock_tick()) {
+			timer_deadline((uint32_t) (first->timeout - get_clock_tick()));
+		} else {
+			// workaround: start timer so new head will be serviced
+			timer_deadline(1);
+		}
+	} else {
+		// prevent spurious interrupts
+		timer_disable();
+	}
+}
+
+void timer_queue_remove_task(task_t* task)
+{
+	if(BUILTIN_EXPECT(!task, 0)) {
+		return;
+	}
+
+	task_list_t* timer_queue = &readyqueues[CORE_ID].timers;
+
+#ifdef DYNAMIC_TICKS
+	// if task is first in timer queue, we need to update the oneshot
+	// timer for the next task
+	if(timer_queue->first == task) {
+		update_timer(task->next);
+	}
+#endif
+
+	task_list_remove_task(timer_queue, task);
+}
+
+
+
 /** @brief Wakeup a blocked task
  * @param id The task's tid_t structure
  * @return
@@ -588,56 +656,22 @@ int wakeup_task(tid_t id)
 		ret = 0;
 
 		spinlock_irqsave_lock(&readyqueues[core_id].lock);
+
+		// if task is in timer queue, remove it
+		if (task->flags & TASK_TIMER) {
+			task->flags &= ~TASK_TIMER;
+
+			timer_queue_remove_task(task);
+		}
+
 		// increase the number of ready tasks
 		readyqueues[core_id].nr_tasks++;
 
-		// do we need to remove from timer queue?
-		if (task->flags & TASK_TIMER) {
-			task->flags &= ~TASK_TIMER;
-			if (task->prev)
-				task->prev->next = task->next;
-			if (task->next)
-				task->next->prev = task->prev;
-			if (readyqueues[core_id].timers.first == task) {
-				readyqueues[core_id].timers.first = task->next;
-
-#ifdef DYNAMIC_TICKS
-				const task_t* first = readyqueues[core_id].timers.first;
-				if(first) {
-					if(first->timeout > get_clock_tick()) {
-						timer_deadline(first->timeout - get_clock_tick());
-					} else {
-						// workaround: start timer so new head will be serviced
-						timer_deadline(1);
-					}
-				} else {
-					// prevent spurious interrupts
-					timer_disable();
-				}
-#endif
-			}
-			if (readyqueues[core_id].timers.last == task)
-				readyqueues[core_id].timers.last = task->prev;
-		}
-
 		// add task to the runqueue
-		if (!readyqueues[core_id].queue[prio-1].last) {
-			readyqueues[core_id].queue[prio-1].last = readyqueues[core_id].queue[prio-1].first = task;
-			task->next = task->prev = NULL;
-			readyqueues[core_id].prio_bitmap |= (1 << prio);
-		} else {
-			task->prev = readyqueues[core_id].queue[prio-1].last;
-			task->next = NULL;
-			readyqueues[core_id].queue[prio-1].last->next = task;
-			readyqueues[core_id].queue[prio-1].last = task;
-		}
-		spinlock_irqsave_unlock(&readyqueues[core_id].lock);
+		task_list_enqueue(&readyqueues[core_id].queue[prio-1], task);
+		readyqueues[core_id].prio_bitmap |= (1 << prio);
 
-#if 0 //def DYNAMIC_TICKS
-		// send IPI to be sure that the scheuler recognize the new task
-		if (core_id != CORE_ID)
-			apic_send_ipi(core_id, 121);
-#endif
+		spinlock_irqsave_unlock(&readyqueues[core_id].lock);
 	}
 
 	irq_nested_enable(flags);
