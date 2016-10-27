@@ -33,7 +33,7 @@ endif
 # other implicit rules
 %.o : %.c
 	@echo [CC] $@
-	$Q$(CC_FOR_TARGET) -c $(CFLAGS_FOR_TARGET) -o $@ $<
+	$Q$(CC_FOR_TARGET) -c $(CFLAGS_FOR_TARGET) -ggdb3 -I../../include -I../../arch/x86/include -o $@ $<
 
 %.o : %.go
 	@echo [GO] $@
@@ -49,7 +49,7 @@ endif
 
 default: all
 
-all: hello hello++ thr_hello jacobi hellof RCCE_minimum signals pi server
+all: hello hello++ thr_hello jacobi hellof RCCE_minimum signals pi server ipc
 
 hello++: hello++.o
 	@echo [LD] $@
@@ -113,6 +113,12 @@ signals: signals.o
 	$Q$(CC_FOR_TARGET) -o $@ $< $(LDFLAGS_FOR_TARGET) $(CFLAGS_FOR_TARGET) -pthread
 	$Q$(OBJCOPY_FOR_TARGET) $(KEEP_DEBUG) $@ $@.sym
 	$Q$(OBJCOPY_FOR_TARGET) $(STRIP_DEBUG) $@
+	$Qchmod a-x $@.sym
+
+ipc: ipc.o
+	@echo [LD] $@
+	$Q$(CC_FOR_TARGET) -o $@ $< $(LDFLAGS_FOR_TARGET) $(CFLAGS_FOR_TARGET) -pthread
+	$Q$(OBJCOPY_FOR_TARGET) $(KEEP_DEBUG) $@ $@.sym
 	$Qchmod a-x $@.sym
 
 RCCE_minimum: RCCE_minimum.o

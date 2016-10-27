@@ -45,7 +45,6 @@ extern "C" {
 
 typedef void (*signal_handler_t)(int);
 
-// This is used in deqeue.h (HACK)
 typedef struct _sig {
 	tid_t dest;
 	int signum;

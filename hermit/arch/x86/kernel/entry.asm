@@ -360,7 +360,7 @@ isrstub_pseudo_error 9
 
 ; Create entries for the interrupts 80 to 82
 %assign i 80
-%rep 3
+%rep 4
   irqstub i
 %assign i i+1
 %endrep

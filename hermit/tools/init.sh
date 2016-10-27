@@ -23,4 +23,5 @@ echo ":hermit:M:$ELF_OSABI_OFFSET:$ELF_OSABI::$PROXY:" > /proc/sys/fs/binfmt_mis
 # Startup completed
 sleep 1 && echo -e '\nWelcome to HermitCore (http://www.hermitcore.org/)!'
 
+/bin/sh -c "HERMIT_CPUS=1-3 /hermit/usr/tests/ipc"
 /bin/sh

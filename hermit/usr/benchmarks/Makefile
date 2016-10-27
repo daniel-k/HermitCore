@@ -35,7 +35,7 @@ ICC_EXE =
 # other implicit rules
 %.o : %.c
 	@echo [CC] $@
-	$Q$(CC_FOR_TARGET) -c $(CFLAGS_FOR_TARGET) -o $@ $< 
+	$Q$(CC_FOR_TARGET) -c $(CFLAGS_FOR_TARGET) -I../../arch/x86/include/ -o $@ $< 
 
 %.o: %.cpp
 	@echo [CXX] $@
@@ -77,6 +77,13 @@ basic.o: basic.c
 	$Q$(CC_FOR_TARGET) -c $(CFLAGS_FOR_TARGET) -pthread -o $@ $<
 
 basic: basic.o
+	@echo [LD] $@
+	$Q$(CC_FOR_TARGET) -o $@ $< $(LDFLAGS_FOR_TARGET) $(CFLAGS_FOR_TARGET) -pthread
+	$Q$(OBJCOPY_FOR_TARGET) $(KEEP_DEBUG) $@ $@.sym
+	$Q$(OBJCOPY_FOR_TARGET) $(STRIP_DEBUG) $@
+	$Qchmod a-x $@.sym
+
+ipc: ipc.o
 	@echo [LD] $@
 	$Q$(CC_FOR_TARGET) -o $@ $< $(LDFLAGS_FOR_TARGET) $(CFLAGS_FOR_TARGET) -pthread
 	$Q$(OBJCOPY_FOR_TARGET) $(KEEP_DEBUG) $@ $@.sym

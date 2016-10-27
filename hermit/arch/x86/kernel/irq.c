@@ -75,6 +75,7 @@ extern void irq23(void);
 extern void irq80(void);
 extern void irq81(void);
 extern void irq82(void);
+extern void irq83(void);
 extern void apic_timer(void);
 extern void apic_lint0(void);
 extern void apic_lint1(void);
