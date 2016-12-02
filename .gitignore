@@ -32,3 +32,16 @@ usr/openmpbench/taskbench
 usr/x86/
 usr/tmp/
 arch/x86/kernel/boot.h
+config.log
+config.status
+autom4te.cache
+/Makefile
+*.pcap
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes
+*.pyc
+*.callgrind
+*.xray
