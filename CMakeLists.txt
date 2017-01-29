@@ -5,3 +5,4 @@ project (HermitCore)
 
 add_subdirectory(usr/benchmarks)
 add_subdirectory(usr/tests)
+add_subdirectory(arch/x86/kernel)
