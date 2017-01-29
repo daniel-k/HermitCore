@@ -23,9 +23,14 @@ target_link_libraries(thr_hello pthread)
 add_executable(signals signals.c)
 target_link_libraries(signals pthread)
 
+set(TARGETS
+	hello hello++ hellof pi server RCCE_minimum thr_hello signals jacobi)
+
+add_custom_target(hermit_tests
+	DEPENDS ${TARGETS})
+
 install(TARGETS
-			hello hello++ hellof pi server RCCE_minimum thr_hello
-			signals jacobi
+			${TARGETS}
 		DESTINATION
 			${HERMIT_BIN_DIR}/tests)
 

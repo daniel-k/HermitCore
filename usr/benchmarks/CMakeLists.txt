@@ -19,7 +19,14 @@ add_executable(stream stream.c)
 target_compile_options(stream PRIVATE -fopenmp)
 target_link_libraries(stream iomp pthread)
 
-install(TARGETS
-			basic hg netio RCCE_pingpong stream
-		DESTINATION
-			${HERMIT_BIN_DIR})
+set(TARGETS
+	basic hg netio RCCE_pingpong stream)
+
+add_custom_target(hermit_benchmarks
+    DEPENDS ${TARGETS})
+
+install(
+	TARGETS
+		${TARGETS}
+	DESTINATION
+		${HERMIT_BIN_DIR})

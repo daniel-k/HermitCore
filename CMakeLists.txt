@@ -8,6 +8,9 @@ project (HermitCore)
 add_subdirectory(usr/benchmarks EXCLUDE_FROM_ALL)
 add_subdirectory(usr/tests EXCLUDE_FROM_ALL)
 
+add_custom_target(examples
+	DEPENDS	hermit_tests hermit_benchmarks)
+
 ### Kernel
 
 add_kernel_module_sources("kernel"		"kernel/*.c")
