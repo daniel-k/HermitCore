@@ -1,3 +1,5 @@
+include(${CMAKE_CURRENT_LIST_DIR}/HermitUtils.cmake)
+
 # scripts to detect HermitCore Go compiler
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/golang/)
 
