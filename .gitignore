@@ -19,6 +19,7 @@ autom4te.cache
 *.elf32
 *.sym
 *.bin
+**/build/*
 qemu-vlan0.pcap
 autom4te.cache
 documentation/html/
