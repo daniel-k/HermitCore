@@ -3,14 +3,19 @@ include(../../cmake/HermitCore.cmake)
 
 project(arch_x86_kernel C ASM_NASM)
 
+set_parent(X86_KERNEL_TARGET		${PROJECT_NAME})
+set_parent(X86_KERNEL_ASM_TARGET	${X86_KERNEL_TARGET}_asm)
+set_parent(X86_KERNEL_C_TARGET		${X86_KERNEL_TARGET}_c)
+
+add_custom_target(${X86_KERNEL_TARGET})
+
 # compiling kernel code here
 add_definitions(-D__KERNEL__)
 
-add_custom_target(${PROJECT_NAME})
 
 ### ASM sources ###
 
-add_library(${PROJECT_NAME}_asm OBJECT
+add_library(${X86_KERNEL_ASM_TARGET} OBJECT
 	kernel/entry.asm
 	kernel/string.asm)
 
@@ -24,9 +29,9 @@ add_library(${PROJECT_NAME}_asm OBJECT
 #       Upstream issue: https://gitlab.kitware.com/cmake/cmake/issues/15226
 #
 set(_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}")
-set(_BUILD_DIR "${_BUILD_DIR}/${PROJECT_NAME}_asm.dir")
+set(_BUILD_DIR "${_BUILD_DIR}/${X86_KERNEL_ASM_TARGET}.dir")
 
-get_target_property(ASM_SOURCES ${PROJECT_NAME}_asm SOURCES)
+get_target_property(ASM_SOURCES ${X86_KERNEL_ASM_TARGET} SOURCES)
 foreach(SOURCE ${ASM_SOURCES})
 	set(OBJECT "${SOURCE}.obj")
 	set(OBJECT_PATH "${_BUILD_DIR}/${OBJECT}")
@@ -40,7 +45,7 @@ foreach(SOURCE ${ASM_SOURCES})
 		COMMAND
 			${CMAKE_ELFEDIT} --output-osabi HermitCore ${OBJECT_PATH}
 		DEPENDS
-			${PROJECT_NAME}_asm)
+			${X86_KERNEL_ASM_TARGET})
 
 	# make main target depend on this
 	add_dependencies(${PROJECT_NAME} ${OBJECT_TARGET_NAME})
@@ -53,15 +58,15 @@ file(GLOB KERNEL_SOURCES	"kernel/*.c")
 file(GLOB MM_SOURCES		"mm/*.c")
 
 # add boot.h as source to mark dependency boot.asm -> boot.h -> apic.c
-add_library(${PROJECT_NAME}_c OBJECT
+add_library(${X86_KERNEL_C_TARGET} OBJECT
 	${KERNEL_SOURCES} ${MM_SOURCES}
 	${CMAKE_BINARY_DIR}/boot.h)
 
-target_include_directories(${PROJECT_NAME}_c BEFORE
+target_include_directories(${X86_KERNEL_C_TARGET} BEFORE
 	PUBLIC ${HERMIT_KERNEL_INCLUDES}
 	PRIVATE ${CMAKE_BINARY_DIR})
 
-target_compile_options(${PROJECT_NAME}_c
+target_compile_options(${X86_KERNEL_C_TARGET}
 	PRIVATE ${HERMIT_KERNEL_FLAGS})
 
 # assemble boot.asm and dump to C-array in boot.h

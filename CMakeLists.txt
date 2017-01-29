@@ -49,15 +49,15 @@ endforeach()
 # TODO: make this conditional when new architectures are implemented
 add_subdirectory(arch/x86)
 list(APPEND KERNEL_OBJECTS
-	$<TARGET_OBJECTS:arch_x86_kernel_c>
-	$<TARGET_OBJECTS:arch_x86_kernel_asm>)
+	$<TARGET_OBJECTS:${X86_KERNEL_ASM_TARGET}>
+	$<TARGET_OBJECTS:${X86_KERNEL_C_TARGET}>)
 
 # finally build libhermit.a
 add_library(hermit STATIC ${KERNEL_OBJECTS})
 
 # after compiling ASM sources, we need to post-process them. Adding this
 # dependency makes sure that this is done before hermit is linked
-add_dependencies(hermit arch_x86_kernel)
+add_dependencies(hermit ${X86_KERNEL_TARGET})
 
 # rename sections in final library
 add_custom_command(

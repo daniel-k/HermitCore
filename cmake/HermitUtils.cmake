@@ -59,3 +59,8 @@ macro(deploy TARGETS DESTINATION COMPONENT)
 
 	add_dependencies(uninstall ${UNINSTALL_TARGET})
 endmacro(deploy)
+
+macro(set_parent VAR VALUE)
+	set(${VAR} ${VALUE} PARENT_SCOPE)
+	set(${VAR} ${VALUE})
+endmacro(set_parent)
