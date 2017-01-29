@@ -22,10 +22,11 @@ file(GLOB MM_SOURCES		"mm/*.c")
 # add boot.h as source to mark dependency boot.asm -> boot.h -> apic.c
 add_library(${PROJECT_NAME}_c OBJECT
 	${KERNEL_SOURCES} ${MM_SOURCES}
-	${CMAKE_CURRENT_LIST_DIR}/kernel/boot.h)
+	${CMAKE_BINARY_DIR}/boot.h)
 
 target_include_directories(${PROJECT_NAME}_c BEFORE
-	PUBLIC ${HERMIT_KERNEL_INCLUDES})
+	PUBLIC ${HERMIT_KERNEL_INCLUDES}
+	PRIVATE ${CMAKE_BINARY_DIR})
 
 target_compile_options(${PROJECT_NAME}_c
 	PRIVATE ${HERMIT_KERNEL_FLAGS})
@@ -34,19 +35,17 @@ target_compile_options(${PROJECT_NAME}_c
 # assemble boot.asm and dump to C-array in boot.h
 add_custom_command(
 	OUTPUT
-		${CMAKE_CURRENT_LIST_DIR}/kernel/boot.h
+		${CMAKE_BINARY_DIR}/boot.h
 	DEPENDS
 		kernel/boot.asm
 	COMMAND
 		echo "static const uint8_t boot_code[] = {" > boot.h
 	COMMAND
-		nasm -f bin -o boot.bin boot.asm
+		nasm -f bin -o boot.bin ${CMAKE_CURRENT_LIST_DIR}/kernel/boot.asm
 	COMMAND
 		hexdump -v -e "7/1 \"0x%02X, \" 1/1 \" 0x%02X,\\n\"" boot.bin >> boot.h
 	COMMAND
 		echo "};" >> boot.h
-	COMMAND
-		rm boot.bin
 	WORKING_DIRECTORY
-		${CMAKE_CURRENT_LIST_DIR}/kernel
+		${CMAKE_BINARY_DIR}/
 	VERBATIM USES_TERMINAL)
