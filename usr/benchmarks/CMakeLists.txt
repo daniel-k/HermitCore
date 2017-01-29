@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
+include(../../cmake/HermitCore.cmake)
 
-set(CMAKE_TOOLCHAIN_FILE ../../cmake/Toolchain.HermitCore.cmake)
 project (hermit_benchmarks C)
 
 add_executable(basic basic.c)
@@ -20,4 +20,4 @@ target_link_libraries(stream iomp pthread)
 install(TARGETS
 			basic hg netio RCCE_pingpong stream
 		DESTINATION
-			${HERMIT_ROOT}/bin)
+			${HERMIT_BIN_DIR})

@@ -1,28 +1,18 @@
 cmake_minimum_required(VERSION 3.7.1)
 
-set(CMAKE_TOOLCHAIN_FILE ../../../cmake/Toolchain.HermitCore.cmake)
-project (arch_x86_kernel C ASM_NASM)
+include(../../../cmake/HermitCore.cmake)
 
-# move this to somewhere else, nasm hack
-add_compile_options(-I ${HERMIT_ROOT}/include/hermit/ )
+project (arch_x86_kernel C ASM_NASM)
 
 # compiling kernel code here
 add_definitions(-D__KERNEL__)
 
-include_directories(
-	${HERMIT_ROOT}/include
-	${HERMIT_ROOT}/arch/x86/include
-	${HERMIT_ROOT}/lwip/src/include
-	${HERMIT_ROOT}/drivers)
-
 file(GLOB_RECURSE C_FILES "*.c")
-
-# make sure that NASM creates elf64 format, no matter on which host system
-set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
-enable_language(ASM_NASM)
 
 # create kernel library
 add_library(arch_x86_kernel entry.asm string.asm ${C_FILES})
+target_include_directories(arch_x86_kernel SYSTEM BEFORE
+	PUBLIC ${HERMIT_ROOT}/arch/x86/include)
 
 # apic.c depends on boot code from boot.asm which shall be converted
 # to a C-array that can be included via boot.h

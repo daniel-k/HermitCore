@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7.1)
+include(../../cmake/HermitCore.cmake)
 
-set(CMAKE_TOOLCHAIN_FILE ../../cmake/Toolchain.HermitCore.cmake)
 project (hermit_tests C CXX Fortran Go)
 
 add_executable(hello hello.c)
@@ -24,5 +24,5 @@ target_link_libraries(signals pthread)
 install(TARGETS
 			hello hello++ hellof pi server RCCE_minimum thr_hello signals jacobi
 		DESTINATION
-			${HERMIT_ROOT}/bin/tests)
+			${HERMIT_BIN_DIR}/tests)
 
