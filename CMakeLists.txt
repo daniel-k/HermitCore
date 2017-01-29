@@ -3,14 +3,6 @@ include(cmake/HermitCore.cmake)
 
 project (HermitCore)
 
-### Examples
-
-add_subdirectory(usr/benchmarks EXCLUDE_FROM_ALL)
-add_subdirectory(usr/tests EXCLUDE_FROM_ALL)
-
-add_custom_target(examples
-	DEPENDS	hermit_tests hermit_benchmarks)
-
 ### Kernel
 
 add_kernel_module_sources("kernel"		"kernel/*.c")
@@ -76,3 +68,10 @@ add_custom_command(
 						 --rename-section .text=.ktext
 						 --rename-section .data=.kdata
 						 $<TARGET_FILE:hermit>)
+
+
+### Examples
+# add after kernel, so they can depend on libhermit
+
+add_subdirectory(usr/benchmarks)
+add_subdirectory(usr/tests)
