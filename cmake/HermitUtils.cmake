@@ -39,3 +39,23 @@ macro(find_toolchain_program NAME)
 				"Cannot find ${_CMAKE_TOOLCHAIN_PREFIX}${NAME_LOWER}")
     endif()
 endmacro(find_toolchain_program)
+
+macro(deploy TARGETS DESTINATION COMPONENT)
+	install(TARGETS ${TARGETS}
+		DESTINATION ${DESTINATION}/${COMPONENT}
+		COMPONENT   ${COMPONENT})
+
+	set(UNINSTALL_TARGET uninstall-${COMPONENT})
+
+	add_custom_target(${UNINSTALL_TARGET}
+		COMMAND
+			${CMAKE_COMMAND} -E remove_directory ${DESTINATION}/${COMPONENT}
+		COMMAND
+			rmdir --ignore-fail-on-non-empty ${DESTINATION})
+
+	if(NOT TARGET uninstall)
+		add_custom_target(uninstall)
+	endif()
+
+	add_dependencies(uninstall ${UNINSTALL_TARGET})
+endmacro(deploy)
