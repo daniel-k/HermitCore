@@ -5,6 +5,10 @@ project(hermit_benchmarks C)
 
 add_compile_options(${HERMIT_APP_FLAGS})
 
+# link against local libhermit.a instead of the one supplied with the
+# toolchain, if built from top-level
+link_directories(${TEST_TARGET} ${CMAKE_BINARY_DIR})
+
 add_executable(basic basic.c)
 target_link_libraries(basic pthread)
 
@@ -19,14 +23,23 @@ add_executable(stream stream.c)
 target_compile_options(stream PRIVATE -fopenmp)
 target_link_libraries(stream iomp pthread)
 
-set(TARGETS
-	basic hg netio RCCE_pingpong stream)
 
-add_custom_target(hermit_benchmarks
-    DEPENDS ${TARGETS})
+get_property(TARGETS
+    DIRECTORY .
+    PROPERTY BUILDSYSTEM_TARGETS)
 
 install(
 	TARGETS
 		${TARGETS}
 	DESTINATION
-		${HERMIT_BIN_DIR})
+		${HERMIT_BIN_DIR}/benchmarks
+	COMPONENT
+		benchmarks)
+
+if(TARGET hermit)
+    # add dependency on hermit, so that everything will be built *after*
+    # libhermit in order to link against the freshly compiled version
+    foreach(TARGET ${TARGETS})
+        add_dependencies(${TARGET} hermit)
+    endforeach()
+endif()

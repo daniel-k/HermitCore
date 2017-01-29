@@ -5,6 +5,10 @@ project(hermit_tests C CXX Fortran Go)
 
 add_compile_options(${HERMIT_APP_FLAGS})
 
+# link against local libhermit.a instead of the one supplied with the
+# toolchain, if built from top-level
+link_directories(${TEST_TARGET} ${CMAKE_BINARY_DIR})
+
 add_executable(hello hello.c)
 add_executable(jacobi jacobi.c)
 add_executable(hello++ hello++.cpp)
@@ -23,14 +27,22 @@ target_link_libraries(thr_hello pthread)
 add_executable(signals signals.c)
 target_link_libraries(signals pthread)
 
-set(TARGETS
-	hello hello++ hellof pi server RCCE_minimum thr_hello signals jacobi)
 
-add_custom_target(hermit_tests
-	DEPENDS ${TARGETS})
+get_property(TARGETS
+	DIRECTORY .
+	PROPERTY BUILDSYSTEM_TARGETS)
 
 install(TARGETS
 			${TARGETS}
 		DESTINATION
-			${HERMIT_BIN_DIR}/tests)
+			${HERMIT_BIN_DIR}/tests
+		COMPONENT
+			tests)
 
+if(TARGET hermit)
+	# add dependency on hermit, so that everything will be built *after*
+	# libhermit in order to link against the freshly compiled version
+	foreach(TARGET ${TARGETS})
+		add_dependencies(${TARGET} hermit)
+	endforeach()
+endif()
