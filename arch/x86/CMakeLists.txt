@@ -6,18 +6,26 @@ project(arch_x86_kernel C ASM_NASM)
 # compiling kernel code here
 add_definitions(-D__KERNEL__)
 
+
+### ASM sources ###
+
+add_library(${PROJECT_NAME}_asm OBJECT
+	kernel/entry.asm
+	kernel/string.asm)
+
+
 ### C sources ###
 
-file(GLOB_RECURSE KERNEL_SOURCES	"kernel/*.c")
-file(GLOB_RECURSE MM_SOURCES		"mm/*.c")
+file(GLOB KERNEL_SOURCES	"kernel/*.c")
+file(GLOB MM_SOURCES		"mm/*.c")
 
-add_library(arch_x86_kernel_c OBJECT
+add_library(${PROJECT_NAME}_c OBJECT
 	${KERNEL_SOURCES} ${MM_SOURCES})
 
-target_include_directories(arch_x86_kernel_c BEFORE
+target_include_directories(${PROJECT_NAME}_c BEFORE
 	PUBLIC ${HERMIT_KERNEL_INCLUDES})
 
-target_compile_options(arch_x86_kernel_c
+target_compile_options(${PROJECT_NAME}_c
 	PRIVATE ${HERMIT_KERNEL_FLAGS})
 
 # apic.c depends on boot code from boot.asm which shall be converted
@@ -45,15 +53,3 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${CMAKE_CURRENT_LIST_DIR}/kernel
 	VERBATIM USES_TERMINAL)
-
-
-### ASM sources ###
-add_library(arch_x86_kernel_asm OBJECT
-	kernel/entry.asm
-	kernel/string.asm)
-
-
-# combine to one target that will be access from top-level
-add_library(${PROJECT_NAME} STATIC
-	$<TARGET_OBJECTS:arch_x86_kernel_asm>
-	$<TARGET_OBJECTS:arch_x86_kernel_c>)
