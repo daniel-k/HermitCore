@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
 include(../../cmake/HermitCore.cmake)
 
-project (hermit_benchmarks C)
+project(hermit_benchmarks C)
 
 add_compile_options(${HERMIT_APP_FLAGS})
 

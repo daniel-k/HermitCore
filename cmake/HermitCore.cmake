@@ -7,7 +7,6 @@ set(HERMIT_BIN_DIR ${HERMIT_ROOT}/bin)
 if(NOT HERMIT_ARCH)
 	set(HERMIT_ARCH x86)
 endif()
-message("HermitCore architecture is: ${HERMIT_ARCH}")
 
 # use default toolchain if not specified by user
 if(NOT CMAKE_TOOLCHAIN_FILE)
