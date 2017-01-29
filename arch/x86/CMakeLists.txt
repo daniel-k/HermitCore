@@ -13,6 +13,33 @@ add_library(${PROJECT_NAME}_asm OBJECT
 	kernel/entry.asm
 	kernel/string.asm)
 
+# HACK: We need to post-process the objects by running elfedit on them, but
+#       there is currently no way to get the list of objects out of CMake
+#       except for $<TARGET_OBJECTS:tgt>, which only works with add_library()
+#       and add_executable().
+#       So predict path to objects and add custom commands that depend on
+#       the asm target.
+#
+#       Upstream issue: https://gitlab.kitware.com/cmake/cmake/issues/15226
+#
+set(_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}")
+set(_BUILD_DIR "${_BUILD_DIR}/${PROJECT_NAME}_asm.dir")
+
+get_target_property(ASM_SOURCES ${PROJECT_NAME}_asm SOURCES)
+foreach(SOURCE ${ASM_SOURCES})
+	set(OBJECT "${SOURCE}.obj")
+	set(OBJECT_PATH "${_BUILD_DIR}/${OBJECT}")
+
+	# slash (/) not allowed in target names
+	string(REPLACE "/" "-"
+		OBJECT_TARGET_NAME
+		"${OBJECT}")
+
+	# run always, how to define dependency here?
+	add_custom_target("${OBJECT_TARGET_NAME}" ALL
+		COMMAND
+			${CMAKE_ELFEDIT} --output-osabi HermitCore ${OBJECT_PATH})
+endforeach()
 
 ### C sources ###
 
