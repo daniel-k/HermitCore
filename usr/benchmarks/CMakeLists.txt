@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
 
 set(CMAKE_TOOLCHAIN_FILE ../../cmake/Toolchain.HermitCore.cmake)
-project (hermit_benchmarks)
+project (hermit_benchmarks C)
 
 add_executable(basic basic.c)
 target_link_libraries(basic pthread)
