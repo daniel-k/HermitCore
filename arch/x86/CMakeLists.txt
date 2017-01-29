@@ -19,8 +19,10 @@ add_library(${PROJECT_NAME}_asm OBJECT
 file(GLOB KERNEL_SOURCES	"kernel/*.c")
 file(GLOB MM_SOURCES		"mm/*.c")
 
+# add boot.h as source to mark dependency boot.asm -> boot.h -> apic.c
 add_library(${PROJECT_NAME}_c OBJECT
-	${KERNEL_SOURCES} ${MM_SOURCES})
+	${KERNEL_SOURCES} ${MM_SOURCES}
+	${CMAKE_CURRENT_LIST_DIR}/kernel/boot.h)
 
 target_include_directories(${PROJECT_NAME}_c BEFORE
 	PUBLIC ${HERMIT_KERNEL_INCLUDES})
@@ -28,18 +30,13 @@ target_include_directories(${PROJECT_NAME}_c BEFORE
 target_compile_options(${PROJECT_NAME}_c
 	PRIVATE ${HERMIT_KERNEL_FLAGS})
 
-# apic.c depends on boot code from boot.asm which shall be converted
-# to a C-array that can be included via boot.h
-set_source_files_properties(apic.c
-	PROPERTIES
-		OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/boot.h)
 
 # assemble boot.asm and dump to C-array in boot.h
 add_custom_command(
 	OUTPUT
-		boot.h
+		${CMAKE_CURRENT_LIST_DIR}/kernel/boot.h
 	DEPENDS
-		boot.asm
+		kernel/boot.asm
 	COMMAND
 		echo "static const uint8_t boot_code[] = {" > boot.h
 	COMMAND
