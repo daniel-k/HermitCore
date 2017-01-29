@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7.1)
+cmake_minimum_required(VERSION 3.7)
 include(../../cmake/HermitCore.cmake)
 
 project(arch_x86_kernel C ASM_NASM)
