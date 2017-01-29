@@ -51,10 +51,5 @@ set(HERMIT_KERNEL_INCLUDES
     ${HERMIT_ROOT}/drivers)
 
 # find elfedit, CMake doesn't use this program, so we have to find it ourself
-find_program(CMAKE_ELFEDIT
-    NAMES ${_CMAKE_TOOLCHAIN_PREFIX}elfedit
-    HINTS ${TOOLCHAIN_BIN_DIR})
+find_toolchain_program(elfedit)
 
-if(NOT CMAKE_ELFEDIT)
-    message(FATAL_ERROR "Cannot find ${_CMAKE_TOOLCHAIN_PREFIX}elfedit")
-endif()
