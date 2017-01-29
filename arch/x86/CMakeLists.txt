@@ -38,7 +38,9 @@ foreach(SOURCE ${ASM_SOURCES})
 
 	add_custom_target("${OBJECT_TARGET_NAME}"
 		COMMAND
-			${CMAKE_ELFEDIT} --output-osabi HermitCore ${OBJECT_PATH})
+			${CMAKE_ELFEDIT} --output-osabi HermitCore ${OBJECT_PATH}
+		DEPENDS
+			${PROJECT_NAME}_asm)
 
 	# make main target depend on this
 	add_dependencies(${PROJECT_NAME} ${OBJECT_TARGET_NAME})
