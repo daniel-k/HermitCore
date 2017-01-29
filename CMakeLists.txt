@@ -66,3 +66,13 @@ add_library(hermit STATIC ${KERNEL_OBJECTS})
 # after compiling ASM sources, we need to post-process them. Adding this
 # dependency makes sure that this is done before hermit is linked
 add_dependencies(hermit arch_x86_kernel)
+
+# rename sections in final library
+add_custom_command(
+	TARGET
+		hermit POST_BUILD
+	COMMAND
+		${CMAKE_OBJCOPY} --rename-section .bss=.kbss
+						 --rename-section .text=.ktext
+						 --rename-section .data=.kdata
+						 $<TARGET_FILE:hermit>)
