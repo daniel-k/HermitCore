@@ -21,3 +21,21 @@ endmacro(get_kernel_module_sources)
 macro(get_kernel_modules VAR)
 	set(${VAR} ${_KERNEL_MODULES})
 endmacro(get_kernel_modules)
+
+# find program in /toolchain/dir/prefix-NAME, only supply NAME
+macro(find_toolchain_program NAME)
+
+    string(TOUPPER "${NAME}" NAME_UPPER)
+    string(TOLOWER "${NAME}" NAME_LOWER)
+
+    set(VARNAME "CMAKE_${NAME_UPPER}")
+
+    find_program(${VARNAME}
+        NAMES ${_CMAKE_TOOLCHAIN_PREFIX}${NAME_LOWER}
+        HINTS ${TOOLCHAIN_BIN_DIR})
+
+    if(NOT ${VARNAME})
+        message(FATAL_ERROR
+				"Cannot find ${_CMAKE_TOOLCHAIN_PREFIX}${NAME_LOWER}")
+    endif()
+endmacro(find_toolchain_program)
