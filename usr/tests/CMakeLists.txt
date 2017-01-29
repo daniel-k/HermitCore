@@ -3,6 +3,8 @@ include(../../cmake/HermitCore.cmake)
 
 project (hermit_tests C CXX Fortran Go)
 
+add_compile_options(${HERMIT_APP_FLAGS})
+
 add_executable(hello hello.c)
 add_executable(jacobi jacobi.c)
 add_executable(hello++ hello++.cpp)

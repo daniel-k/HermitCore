@@ -3,6 +3,8 @@ include(../../cmake/HermitCore.cmake)
 
 project (hermit_benchmarks C)
 
+add_compile_options(${HERMIT_APP_FLAGS})
+
 add_executable(basic basic.c)
 target_link_libraries(basic pthread)
 
