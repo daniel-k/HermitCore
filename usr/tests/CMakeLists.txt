@@ -32,12 +32,8 @@ get_property(TARGETS
 	DIRECTORY .
 	PROPERTY BUILDSYSTEM_TARGETS)
 
-install(TARGETS
-			${TARGETS}
-		DESTINATION
-			${HERMIT_BIN_DIR}/tests
-		COMPONENT
-			tests)
+# deploy all targets with install and also provide uninstall target
+deploy("${TARGETS}" ${HERMIT_BIN_DIR} tests)
 
 if(TARGET hermit)
 	# add dependency on hermit, so that everything will be built *after*

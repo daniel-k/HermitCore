@@ -28,18 +28,13 @@ get_property(TARGETS
     DIRECTORY .
     PROPERTY BUILDSYSTEM_TARGETS)
 
-install(
-	TARGETS
-		${TARGETS}
-	DESTINATION
-		${HERMIT_BIN_DIR}/benchmarks
-	COMPONENT
-		benchmarks)
+# deploy all targets with install and also provide uninstall target
+deploy("${TARGETS}" ${HERMIT_BIN_DIR} benchmarks)
 
 if(TARGET hermit)
-    # add dependency on hermit, so that everything will be built *after*
-    # libhermit in order to link against the freshly compiled version
-    foreach(TARGET ${TARGETS})
-        add_dependencies(${TARGET} hermit)
-    endforeach()
+	# add dependency on hermit, so that everything will be built *after*
+	# libhermit in order to link against the freshly compiled version
+	foreach(TARGET ${TARGETS})
+		add_dependencies(${TARGET} hermit)
+	endforeach()
 endif()
