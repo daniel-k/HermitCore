@@ -29,7 +29,7 @@ set(CMAKE_ASM_NASM_FLAGS
 	"${CMAKE_ASM_NASM_FLAGS} -I ${HERMIT_ROOT}/include/hermit/")
 
 set(HERMIT_KERNEL_FLAGS
-					-g -m64 -Wall -O2 -mno-red-zone
+					-m64 -Wall -O2 -mno-red-zone
 					-fno-var-tracking-assignments -fstrength-reduce
 					-fomit-frame-pointer -finline-functions -ffreestanding
 					-nostdinc -fno-stack-protector -mno-sse -mno-mmx
