@@ -92,13 +92,19 @@
 	ret; \
 	})
 
-static int kvm = -1, vmfd = -1, vcpufd = 1;
 static uint8_t* guest_mem = NULL;
 static uint8_t* klog = NULL;
 static size_t guest_size = 0x20000000ULL;
 static uint64_t elf_entry;
 //static pthread_t vcpu_thread;
 static volatile uint8_t done = 0;
+
+struct kvm_vm {
+	int kvm_fd;
+	int vm_fd;
+};
+
+static struct kvm_vm kvm_vm;
 
 typedef struct {
 	int fd;
@@ -147,12 +153,12 @@ static void uhyve_exit(void)
 		printf("%s\n", klog);
 	}
 
-	if (vcpufd != -1)
-		close(vcpufd);
-	if (vmfd != -1)
-		close(vmfd);
-	if (kvm != -1)
-		close(kvm);
+//	if (vcpufd != -1)
+//		close(vcpufd);
+	if (kvm_vm.vm_fd != -1)
+		close(kvm_vm.vm_fd);
+	if (kvm_vm.kvm_fd != -1)
+		close(kvm_vm.kvm_fd);
 }
 
 static uint32_t get_cpufreq(void)
@@ -233,7 +239,7 @@ static ssize_t pread_in_full(int fd, void *buf, size_t count, off_t offset)
 	return total;
 }
 
-static int load_kernel(uint8_t* mem, char* path)
+static int load_kernel(uint8_t* mem, char* path, uint32_t cpu_count)
 {
 	Elf64_Ehdr hdr;
 	Elf64_Phdr *phdr = NULL;
@@ -303,7 +309,7 @@ static int load_kernel(uint8_t* mem, char* path)
 		*((uint64_t*) (mem+paddr-GUEST_OFFSET + 0x08)) = paddr; // physical start address
 		*((uint64_t*) (mem+paddr-GUEST_OFFSET + 0x10)) = guest_size;   // physical limit
 		*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x18)) = get_cpufreq();
-		*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x24)) = 1; // number of used cpus
+		*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x24)) = cpu_count; // number of used cpus
 		*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x30)) = 0; // apicid
 		*((uint64_t*) (mem+paddr-GUEST_OFFSET + 0x38)) = filesz;
 		*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x60)) = 1; // numa nodes
@@ -435,7 +441,7 @@ static void setup_cpuid(int kvm, int vcpufd)
 	kvm_ioctl(vcpufd, KVM_SET_CPUID2, kvm_cpuid);
 }
 
-static void* vcpu_loop(struct kvm_run *run)
+static void* vcpu_loop(int vcpufd, struct kvm_run *run)
 {
 	int ret;
 
@@ -549,28 +555,68 @@ static void* vcpu_loop(struct kvm_run *run)
 
 static void* uhyve_thread(void* arg)
 {
-	char* path = (char*) arg;
 	size_t mmap_size;
 	struct kvm_run *run;
+	int vcpu_fd;
 
+	struct kvm_regs vcpu_regs = (struct kvm_regs) {
+		.rflags = 0x2	// required by x86 architecture
+	};
+
+
+	/* Map the shared kvm_run structure and following data. */
+	mmap_size = (size_t) kvm_ioctl(kvm_vm.kvm_fd, KVM_GET_VCPU_MMAP_SIZE, NULL);
+
+	if (mmap_size < sizeof(*run))
+		err(1, "KVM: invalid VCPU_MMAP_SIZE: %zd", mmap_size);
+
+	int cpu_number = (int) arg;
+	printf("Init vcpu %i\n", cpu_number);
+
+	vcpu_fd = kvm_ioctl(kvm_vm.vm_fd, KVM_CREATE_VCPU, cpu_number);
+
+	/* Setup registers and memory. */
+	setup_system(vcpu_fd, guest_mem);
+
+	if(cpu_number == 0) {
+		// set instruction pointer only for first CPU
+		vcpu_regs.rip = elf_entry;
+	}
+
+	kvm_ioctl(vcpu_fd, KVM_SET_REGS, &vcpu_regs);
+
+	// map kvm_run structure into user-space
+	run = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, vcpu_fd, 0);
+	if (run == MAP_FAILED)
+		err(1, "KVM: VCPU mmap failed");
+
+	setup_cpuid(kvm_vm.kvm_fd, vcpu_fd);
+
+	return vcpu_loop(vcpu_fd, run);
+}
+
+
+
+int init_uhyve(char *path)
+{	
 	// register routine to close the VM
 	atexit(uhyve_exit);
 
-	char* str = getenv("HERMIT_MEM");
-	if (str)
-		printf("We want to use %s memory\n", str);
+	char* mem_str = getenv("HERMIT_MEM");
+	if (mem_str)
+		printf("We want to use %s memory\n", mem_str);
 
-	kvm = open("/dev/kvm", O_RDWR | O_CLOEXEC);
-	if (kvm < 0)
+	kvm_vm.kvm_fd = open("/dev/kvm", O_RDWR | O_CLOEXEC);
+	if (kvm_vm.kvm_fd < 0)
 		err(1, "Could not open: /dev/kvm");
 
 	/* Make sure we have the stable version of the API */
-	int kvm_api_version = kvm_ioctl(kvm, KVM_GET_API_VERSION, NULL);
+	int kvm_api_version = kvm_ioctl(kvm_vm.kvm_fd, KVM_GET_API_VERSION, NULL);
 	if (kvm_api_version != 12)
 		err(1, "KVM: API version is %d, uhyve requires version 12", kvm_api_version);
 
 	/* Create the virtual machine */
-	vmfd = kvm_ioctl(kvm, KVM_CREATE_VM, 0);
+	kvm_vm.vm_fd = kvm_ioctl(kvm_vm.kvm_fd, KVM_CREATE_VM, 0);
 
 	// TODO: we have to create a gap  for PCI
 	assert(guest_size < KVM_32BIT_GAP_SIZE);
@@ -580,8 +626,6 @@ static void* uhyve_thread(void* arg)
 	if (guest_mem == MAP_FAILED)
 		err(1, "mmap failed");
 
-	if (load_kernel(guest_mem, path) != 0)
-		exit(EXIT_FAILURE);
 
 	/* Map it to the second page frame (to avoid the real-mode IDT at 0). */
 	struct kvm_userspace_memory_region kvm_region = {
@@ -591,48 +635,33 @@ static void* uhyve_thread(void* arg)
 		.userspace_addr = (uint64_t) guest_mem,
 	};
 
-	kvm_ioctl(vmfd, KVM_SET_USER_MEMORY_REGION, &kvm_region);
-	kvm_ioctl(vmfd, KVM_CREATE_IRQCHIP, NULL);
-	vcpufd = kvm_ioctl(vmfd, KVM_CREATE_VCPU, 0);
+	kvm_ioctl(kvm_vm.vm_fd, KVM_SET_USER_MEMORY_REGION, &kvm_region);
+	kvm_ioctl(kvm_vm.vm_fd, KVM_CREATE_IRQCHIP, NULL);
 
-	/* Setup registers and memory. */
-	setup_system(vcpufd, guest_mem);
+	long cpus = 1;
+	int max_vcpus = kvm_ioctl(kvm_vm.kvm_fd, KVM_CHECK_EXTENSION, KVM_CAP_MAX_VCPUS);
 
-	/*
-	 * Initialize registers: instruction pointer for our code, addends,
-	 * and initial flags required by x86 architecture.
-	 * Arguments to the kernel main are passed using the x86_64 calling
-	 * convention: RDI, RSI, RDX, RCX, R8, and R9
-	 */
-	struct kvm_regs regs = {
-		.rip = elf_entry,
-		.rax = 2,
-		.rbx = 2,
-		.rdx = 0,
-		.rflags = 0x2,
-	};
-	kvm_ioctl(vcpufd, KVM_SET_REGS, &regs);
+	char* cpus_str = getenv("HERMIT_CPUS");
+	if(cpus_str)
+		cpus = strtol(cpus_str, NULL, 10);
 
-	/* Map the shared kvm_run structure and following data. */
-	mmap_size = (size_t) kvm_ioctl(kvm, KVM_GET_VCPU_MMAP_SIZE, NULL);
+	if(cpus > max_vcpus)
+		err(1, "More CPUs requested (%lu) than available: %i\n", cpus, max_vcpus);
 
-	if (mmap_size < sizeof(*run))
-		err(1, "KVM: invalid VCPU_MMAP_SIZE: %zd", mmap_size);
+	// load HermitCore application into memory
+	if (load_kernel(guest_mem, path, (uint32_t) cpus) != 0)
+		exit(EXIT_FAILURE);
 
-	run = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, vcpufd, 0);
-	if (run == MAP_FAILED)
-		err(1, "KVM: VCPU mmap failed");
+	pthread_t vcpu_threads[cpus];
 
-	setup_cpuid(kvm, vcpufd);
+	for(int i = 0; i < cpus; i++) {
+		pthread_create(&vcpu_threads[i], NULL, uhyve_thread, (void*) i);
+	}
 
-	return vcpu_loop(run);
-}
+	for(int i = 0; i < cpus; i++) {
+		pthread_join(vcpu_threads[i], NULL);
+	}
 
-int init_uhyve(char *path)
-{
-	//pthread_create(&vcpu_thread, NULL, uhyve_thread, (void*)path);
-
-	uhyve_thread(path);
 	exit(EXIT_SUCCESS);
 	return 0;
 }

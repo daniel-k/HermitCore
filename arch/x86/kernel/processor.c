@@ -33,6 +33,7 @@
 #include <hermit/tasks.h>
 #include <hermit/logging.h>
 #include <asm/multiboot.h>
+#include <asm/kernel_arguments.h>
 
 /*
  * Note that linker symbols are not variables, they have no memory allocated for

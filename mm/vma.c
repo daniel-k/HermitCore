@@ -33,6 +33,7 @@
 #include <hermit/errno.h>
 #include <hermit/logging.h>
 #include <asm/multiboot.h>
+#include <asm/kernel_arguments.h>
 
 /* 
  * Note that linker symbols are not variables, they have no memory allocated for
@@ -80,13 +81,18 @@ int vma_init(void)
 		goto out;
 #endif
 
-	if (mb_info) {
-		ret = vma_add((size_t)mb_info & PAGE_MASK, ((size_t)mb_info & PAGE_MASK) + PAGE_SIZE, VMA_READ|VMA_WRITE);
+	if (kernel_arguments.mb_info) {
+		const size_t mb_info_aligned = (size_t) kernel_arguments.mb_info & PAGE_MASK;
+		const size_t mb_cmdline_aligned = kernel_arguments.mb_info->cmdline & PAGE_MASK;
+
+		ret = vma_add(mb_info_aligned, mb_info_aligned + PAGE_SIZE,
+		              VMA_READ|VMA_WRITE);
 		if (BUILTIN_EXPECT(ret, 0))
 			goto out;
 
-		if ((mb_info->cmdline & PAGE_MASK) != ((size_t) mb_info & PAGE_MASK)) {
-			ret = vma_add((size_t)mb_info->cmdline & PAGE_MASK, ((size_t)mb_info->cmdline & PAGE_MASK) + PAGE_SIZE, VMA_READ|VMA_WRITE);
+		if (mb_cmdline_aligned != mb_info_aligned) {
+			ret = vma_add(mb_cmdline_aligned, mb_cmdline_aligned + PAGE_SIZE,
+			              VMA_READ|VMA_WRITE);
 			if (BUILTIN_EXPECT(ret, 0))
 				goto out;
 		}

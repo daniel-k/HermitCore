@@ -45,6 +45,7 @@
 #include <asm/multiboot.h>
 #include <asm/irq.h>
 #include <asm/page.h>
+#include <asm/kernel_arguments.h>
 
 /* Note that linker symbols are not variables, they have no memory
  * allocated for maintaining a value, rather their address is their value. */
@@ -324,9 +325,12 @@ int page_init(void)
 		LOG_INFO("Detect Go runtime! Consequently, HermitCore zeroed heap.\n");
 	}
 
-	if (mb_info && ((mb_info->cmdline & PAGE_MASK) != ((size_t) mb_info & PAGE_MASK))) {
-		LOG_INFO("Map multiboot cmdline 0x%x into the virtual address space\n", mb_info->cmdline);
-		page_map((size_t) mb_info->cmdline & PAGE_MASK, mb_info->cmdline & PAGE_MASK, 1, PG_GLOBAL|PG_RW|PG_PRESENT);
+	const size_t mb_info_aligned = (size_t) kernel_arguments.mb_info & PAGE_MASK;
+	const size_t mb_cmdline_aligned = kernel_arguments.mb_info->cmdline & PAGE_MASK;
+
+	if (kernel_arguments.mb_info && (mb_info_aligned != mb_cmdline_aligned)) {
+		LOG_INFO("Map multiboot cmdline 0x%x into the virtual address space\n", kernel_arguments.mb_info->cmdline);
+		page_map(mb_cmdline_aligned, mb_cmdline_aligned, 1, PG_GLOBAL|PG_RW|PG_PRESENT);
 	}
 
 	/* Replace default pagefault handler */
