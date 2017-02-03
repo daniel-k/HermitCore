@@ -5,6 +5,13 @@ project (HermitCore)
 
 ### Kernel
 
+# add arch/x86 and its objects
+# TODO: make this conditional when new architectures are implemented
+add_subdirectory(arch/x86)
+list(APPEND KERNEL_OBJECTS
+	$<TARGET_OBJECTS:${X86_KERNEL_ASM_TARGET}>
+	$<TARGET_OBJECTS:${X86_KERNEL_C_TARGET}>)
+
 add_kernel_module_sources("kernel"		"kernel/*.c")
 add_kernel_module_sources("libkern"		"libkern/*.c")
 add_kernel_module_sources("mm"			"mm/*.c")
@@ -45,12 +52,10 @@ foreach(MODULE ${KERNEL_MODULES})
 
 endforeach()
 
-# add arch/x86 and its objects
+# mm uses multiboot information that is accessed through kernel arguments
 # TODO: make this conditional when new architectures are implemented
-add_subdirectory(arch/x86)
-list(APPEND KERNEL_OBJECTS
-	$<TARGET_OBJECTS:${X86_KERNEL_ASM_TARGET}>
-	$<TARGET_OBJECTS:${X86_KERNEL_C_TARGET}>)
+add_dependencies(mm arch_x86_kernel_arguments)
+
 
 # finally build libhermit.a
 add_library(hermit STATIC ${KERNEL_OBJECTS})

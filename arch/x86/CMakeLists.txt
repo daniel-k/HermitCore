@@ -13,11 +13,45 @@ add_custom_target(${X86_KERNEL_TARGET})
 add_definitions(-D__KERNEL__)
 
 
-### ASM sources ###
+### Generate kernel arguments interface
+
+set(KERNEL_ARGUMENTS_FILE ${CMAKE_CURRENT_LIST_DIR}/kernel_arguments.def)
+get_filename_component(KERNEL_ARGUMENTS_BASENAME ${KERNEL_ARGUMENTS_FILE} NAME_WE)
+
+set(KERNEL_ARGUMENTS_ASM_DIR ${CMAKE_CURRENT_LIST_DIR}/kernel/)
+set(KERNEL_ARGUMENTS_ASM ${KERNEL_ARGUMENTS_ASM_DIR}${KERNEL_ARGUMENTS_BASENAME}.asm)
+
+set(KERNEL_ARGUMENTS_C_DIR ${CMAKE_CURRENT_LIST_DIR}/include/asm/)
+set(KERNEL_ARGUMENTS_C ${KERNEL_ARGUMENTS_C_DIR}${KERNEL_ARGUMENTS_BASENAME}.h)
+
+add_custom_target(arch_x86_kernel_arguments
+	BYPRODUCTS
+		${KERNEL_ARGUMENTS_ASM}
+		${KERNEL_ARGUMENTS_C}
+	COMMAND
+		${CMAKE_CURRENT_LIST_DIR}/generate_kernel_arguments.py
+			${KERNEL_ARGUMENTS_FILE}
+			${KERNEL_ARGUMENTS_ASM}
+			${KERNEL_ARGUMENTS_C}
+	SOURCES
+		${CMAKE_CURRENT_LIST_DIR}/generate_kernel_arguments.py
+	DEPENDS
+		${KERNEL_ARGUMENTS_FILE})
+
+
+### ASM sources
+
+# we need to add the include directory for the generated arguments interface
+set(CMAKE_ASM_NASM_FLAGS
+	"${CMAKE_ASM_NASM_FLAGS} -I ${KERNEL_ARGUMENTS_ASM_DIR}")
 
 add_library(${X86_KERNEL_ASM_TARGET} OBJECT
 	kernel/entry.asm
 	kernel/string.asm)
+
+# dependency on interface cannot be added to add_library(...) because it will
+# be included in entry.asm to get the alignment right
+add_dependencies(${X86_KERNEL_ASM_TARGET} arch_x86_kernel_arguments)
 
 # HACK: We need to post-process the objects by running elfedit on them, but
 #       there is currently no way to get the list of objects out of CMake
@@ -52,7 +86,7 @@ foreach(SOURCE ${ASM_SOURCES})
 endforeach()
 
 
-### C sources ###
+### C sources
 
 file(GLOB KERNEL_SOURCES	"kernel/*.c")
 file(GLOB MM_SOURCES		"mm/*.c")
@@ -61,6 +95,8 @@ file(GLOB MM_SOURCES		"mm/*.c")
 add_library(${X86_KERNEL_C_TARGET} OBJECT
 	${KERNEL_SOURCES} ${MM_SOURCES}
 	${CMAKE_BINARY_DIR}/boot.h)
+
+add_dependencies(${X86_KERNEL_C_TARGET} arch_x86_kernel_arguments)
 
 target_include_directories(${X86_KERNEL_C_TARGET} BEFORE
 	PUBLIC ${HERMIT_KERNEL_INCLUDES}
@@ -86,3 +122,9 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${CMAKE_BINARY_DIR}/
 	VERBATIM USES_TERMINAL)
+
+
+### Show include/ in IDE
+
+file(GLOB_RECURSE ARCH_X86_INCLUDES "include/*")
+add_custom_target(arch_x86_includes_ide SOURCES ${ARCH_X86_INCLUDES})

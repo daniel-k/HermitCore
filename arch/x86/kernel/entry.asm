@@ -47,53 +47,7 @@ global _start
 _start:
     jmp start64
 
-align 4
-    global base
-    global limit
-    global cpu_freq
-    global boot_processor
-    global cpu_online
-    global possible_cpus
-    global current_boot_id
-    global isle
-    global possible_isles
-    global phy_rcce_internals
-    global phy_isle_locks
-    global heap_phy_start_address
-    global header_phy_start_address
-    global heap_start_address
-    global header_start_address
-    global heap_size
-    global header_size
-    global disable_x2apic
-    global mb_info
-    global hbmem_base
-    global hbmem_size
-    global uhyve
-    base dq 0
-    limit dq 0
-    cpu_freq dd 0
-    boot_processor dd -1
-    cpu_online dd 0
-    possible_cpus dd 0
-    phy_rcce_internals dq 0
-    current_boot_id dd 0
-    isle dd -1
-    image_size dq 0
-    phy_isle_locks dq 0
-    heap_phy_start_address dq 0
-    header_phy_start_address dq 0
-    heap_size dd 0
-    header_size dd 0
-    possible_isles dd 1
-    heap_start_address dq 0
-    header_start_address dq 0
-    disable_x2apic dd 1
-    single_kernel dd 1
-    mb_info dq 0
-    hbmem_base dq 0
-    hbmem_size dq 0
-    uhyve dd 0
+%include "kernel_arguments.asm"
 
 ; Bootstrap page tables are used during the initialization.
 align 4096
