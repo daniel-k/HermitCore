@@ -5,7 +5,7 @@ autom4te.cache
 *.pcap
 *.config
 *.creator
-*.creator.user
+*.user
 *.files
 *.includes
 *.pyc
@@ -20,6 +20,8 @@ autom4te.cache
 *.sym
 *.bin
 **/build/*
+bin/*
+.idea/*
 qemu-vlan0.pcap
 autom4te.cache
 documentation/html/
