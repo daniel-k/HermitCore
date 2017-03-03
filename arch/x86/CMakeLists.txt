@@ -6,6 +6,7 @@ project(arch_x86_kernel C ASM_NASM)
 # compiling kernel code here
 add_definitions(-D__KERNEL__)
 
+add_custom_target(${PROJECT_NAME})
 
 ### ASM sources ###
 
@@ -35,11 +36,14 @@ foreach(SOURCE ${ASM_SOURCES})
 		OBJECT_TARGET_NAME
 		"${OBJECT}")
 
-	# run always, how to define dependency here?
-	add_custom_target("${OBJECT_TARGET_NAME}" ALL
+	add_custom_target("${OBJECT_TARGET_NAME}"
 		COMMAND
 			${CMAKE_ELFEDIT} --output-osabi HermitCore ${OBJECT_PATH})
+
+	# make main target depend on this
+	add_dependencies(${PROJECT_NAME} ${OBJECT_TARGET_NAME})
 endforeach()
+
 
 ### C sources ###
 
@@ -57,7 +61,6 @@ target_include_directories(${PROJECT_NAME}_c BEFORE
 
 target_compile_options(${PROJECT_NAME}_c
 	PRIVATE ${HERMIT_KERNEL_FLAGS})
-
 
 # assemble boot.asm and dump to C-array in boot.h
 add_custom_command(

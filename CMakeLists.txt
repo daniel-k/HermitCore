@@ -62,3 +62,7 @@ list(APPEND KERNEL_OBJECTS
 
 # finally build libhermit.a
 add_library(hermit STATIC ${KERNEL_OBJECTS})
+
+# after compiling ASM sources, we need to post-process them. Adding this
+# dependency makes sure that this is done before hermit is linked
+add_dependencies(hermit arch_x86_kernel)
