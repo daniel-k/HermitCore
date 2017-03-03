@@ -6,4 +6,4 @@ include(../cmake/HermitCore-Paths.cmake)
 add_executable(proxy proxy.c uhyve.c)
 
 install(TARGETS proxy
-		DESTINATION ${HERMIT_BIN_DIR})
+		DESTINATION bin)

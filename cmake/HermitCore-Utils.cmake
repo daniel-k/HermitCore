@@ -42,22 +42,35 @@ endmacro(find_toolchain_program)
 
 macro(deploy TARGETS DESTINATION COMPONENT)
 	install(TARGETS ${TARGETS}
-		DESTINATION ${DESTINATION}/${COMPONENT}
+		DESTINATION ${DESTINATION}
 		COMPONENT   ${COMPONENT})
 
-	set(UNINSTALL_TARGET uninstall-${COMPONENT})
-
-	add_custom_target(${UNINSTALL_TARGET}
-		COMMAND
-			${CMAKE_COMMAND} -E remove_directory ${DESTINATION}/${COMPONENT}
-		COMMAND
-			rmdir --ignore-fail-on-non-empty ${DESTINATION})
+	# Create hierarchical uninstall targets: uninstall[-COMPONENT[-TARGET]]
 
 	if(NOT TARGET uninstall)
 		add_custom_target(uninstall)
 	endif()
 
-	add_dependencies(uninstall ${UNINSTALL_TARGET})
+	set(COMPONENT_UNINSTALL_TARGET uninstall-${COMPONENT})
+	if(NOT TARGET ${COMPONENT_UNINSTALL_TARGET})
+		add_custom_target(${COMPONENT_UNINSTALL_TARGET})
+		add_dependencies(uninstall ${COMPONENT_UNINSTALL_TARGET})
+		# message("add component uninstall target: ${COMPONENT_UNINSTALL_TARGET}")
+	endif()
+
+	foreach(TARGET ${TARGETS})
+		set(TARGET_UNINSTALL_TARGET ${COMPONENT_UNINSTALL_TARGET}-${TARGET})
+		# message("add target uninstall target: ${TARGET_UNINSTALL_TARGET}")
+
+		add_custom_target(${TARGET_UNINSTALL_TARGET}
+			COMMAND
+				${CMAKE_COMMAND} -E remove_directory ${DESTINATION}/$<TARGET_FILE:${TARGET}>
+			COMMAND
+				rmdir --ignore-fail-on-non-empty ${DESTINATION})
+
+		add_dependencies(${COMPONENT_UNINSTALL_TARGET} ${TARGET_UNINSTALL_TARGET})
+
+	endforeach()
 endmacro(deploy)
 
 macro(set_parent VAR VALUE)

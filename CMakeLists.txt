@@ -81,6 +81,7 @@ add_custom_command(
 						 --rename-section .data=.kdata
 						 $<TARGET_FILE:hermit>)
 
+deploy(hermit ${TARGET_ARCH}/lib libhermit)
 
 ### External projects
 

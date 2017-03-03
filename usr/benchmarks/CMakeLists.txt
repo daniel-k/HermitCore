@@ -28,7 +28,7 @@ get_property(TARGETS
     PROPERTY BUILDSYSTEM_TARGETS)
 
 # deploy all targets with install and also provide uninstall target
-deploy("${TARGETS}" ${HERMIT_BIN_DIR} benchmarks)
+deploy("${TARGETS}" extra/benchmarks benchmarks)
 
 if(TARGET hermit)
 	# add dependency on hermit, so that everything will be built *after*
