@@ -1,10 +1,8 @@
-include(${CMAKE_CURRENT_LIST_DIR}/HermitUtils.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Paths.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Utils.cmake)
 
 # scripts to detect HermitCore Go compiler
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/golang/)
-
-set(HERMIT_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
-set(HERMIT_BIN_DIR ${HERMIT_ROOT}/bin)
 
 if(NOT HERMIT_ARCH)
 	set(HERMIT_ARCH x86)
