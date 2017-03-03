@@ -51,3 +51,8 @@ set(HERMIT_KERNEL_INCLUDES
 # find elfedit, CMake doesn't use this program, so we have to find it ourself
 find_toolchain_program(elfedit)
 
+# HACK: when CMake detects compilers it taints CMAKE_INSTALL_PREFIX, so in
+#       order to rely on that variable (we redefine it), enable all languages
+#       here and source pathes again.
+enable_language(C CXX Fortran Go)
+include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Paths.cmake)

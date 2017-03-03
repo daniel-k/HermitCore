@@ -7,7 +7,7 @@ add_compile_options(${HERMIT_APP_FLAGS})
 
 # link against local libhermit.a instead of the one supplied with the
 # toolchain, if built from top-level
-link_directories(${TEST_TARGET} ${CMAKE_BINARY_DIR})
+link_directories(${CMAKE_BINARY_DIR} ${EXTERNALS_LIB_DIR})
 
 add_executable(basic basic.c)
 target_link_libraries(basic pthread)
@@ -21,8 +21,7 @@ target_link_libraries(RCCE_pingpong ircce)
 
 add_executable(stream stream.c)
 target_compile_options(stream PRIVATE -fopenmp)
-target_link_libraries(stream iomp pthread)
-
+target_link_libraries(stream -fopenmp)
 
 get_property(TARGETS
     DIRECTORY .

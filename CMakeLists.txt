@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
+
+include(ExternalProject)
 include(cmake/HermitCore.cmake)
 
 project (HermitCore)
@@ -70,8 +72,31 @@ add_custom_command(
 						 $<TARGET_FILE:hermit>)
 
 
+### External projects
+
+# Intel's OpenMP runtime for x86
+ExternalProject_Add(libiomp
+	SOURCE_DIR ${HERMIT_ROOT}/usr/libomp
+	# install to intermediate third-party libs location
+	INSTALL_COMMAND
+		${CMAKE_COMMAND} --build <BINARY_DIR>
+		                 --target install --
+		                     DESTDIR=${EXTERNALS_INTERMEDIATE_DIR}
+	CMAKE_ARGS
+		-DHERMIT=1
+		-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+
+add_dependencies(hermit libiomp)
+
+# relocate external libraries to our install destination
+install(DIRECTORY ${EXTERNALS_BASE_DIR}
+	DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH})
+
+
 ### Examples
-# add after kernel, so they can depend on libhermit
+# include applications at the end so they can depend on libhermit and other
+# external runtimes that are freshly built
 
 add_subdirectory(usr/benchmarks)
 add_subdirectory(usr/tests)
