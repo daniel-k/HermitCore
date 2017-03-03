@@ -10,7 +10,7 @@ endif()
 
 # use default toolchain if not specified by user
 if(NOT CMAKE_TOOLCHAIN_FILE)
-	set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/Toolchain.HermitCore.cmake)
+	set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/HermitCore-Toolchain-${HERMIT_ARCH}.cmake)
 endif()
 
 # NASM detection will change binary format depending on host system, but
