@@ -7,6 +7,10 @@ project (HermitCore)
 
 ### Kernel
 
+# generate config.h from template, then generate config.inc from config.h
+# exports: config-h, config-inc
+add_subdirectory(include/hermit)
+
 add_kernel_module_sources("kernel"		"kernel/*.c")
 add_kernel_module_sources("libkern"		"libkern/*.c")
 add_kernel_module_sources("mm"			"mm/*.c")
@@ -39,6 +43,9 @@ foreach(MODULE ${KERNEL_MODULES})
 	target_include_directories(${MODULE}
 		PUBLIC ${HERMIT_KERNEL_INCLUDES})
 
+	# kernel code probably needs global config.h
+	add_dependencies(${MODULE} config-h)
+
 	# suppress all LwIP compiler warnings. Not our code, so we cannot fix
 	if("${MODULE}" STREQUAL "lwip")
 		target_compile_options(${MODULE}
@@ -53,6 +60,9 @@ add_subdirectory(arch/x86)
 list(APPEND KERNEL_OBJECTS
 	$<TARGET_OBJECTS:${X86_KERNEL_ASM_TARGET}>
 	$<TARGET_OBJECTS:${X86_KERNEL_C_TARGET}>)
+
+add_dependencies(${X86_KERNEL_ASM_TARGET} config-inc)
+add_dependencies(${X86_KERNEL_C_TARGET} config-h)
 
 # finally build libhermit.a
 add_library(hermit STATIC ${KERNEL_OBJECTS})
