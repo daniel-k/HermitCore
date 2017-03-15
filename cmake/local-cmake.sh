@@ -11,10 +11,17 @@ URL="https://cmake.org/files/v${MAJOR}/cmake-${MAJOR}.${MINOR}-${PLATFORM}.tar.g
 ARCHIVE="$(basename ${URL})"
 DIR="$(basename ${ARCHIVE} .tar.gz)"
 
+
+relpath() {
+	# workaround because Ubuntu seems to use an ancient realpath version
+	# https://stackoverflow.com/questions/2564634/convert-absolute-path-into-relative-path-given-a-current-directory-using-bash#comment12808306_7305217
+	python -c "import os.path; print(os.path.relpath('${2:-$PWD}','$1'))";
+}
+
 HERMIT_TOP="$(git rev-parse --show-toplevel)"
 HERMIT_CMAKE="${HERMIT_TOP}/cmake"
 CMAKE_DIR="${HERMIT_CMAKE}/${DIR}"
-CMAKE_DIR_REL="$(realpath --relative-to=${HERMIT_TOP} ${CMAKE_DIR})"
+CMAKE_DIR_REL="$(relpath ${HERMIT_TOP} ${CMAKE_DIR})"
 
 # make sure we're sourced, not executed
 if [ "$0" = "$BASH_SOURCE" ]
