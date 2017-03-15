@@ -111,3 +111,31 @@ install(DIRECTORY ${EXTERNALS_BASE_DIR}
 
 add_subdirectory(usr/benchmarks)
 add_subdirectory(usr/tests)
+
+
+### Packaging
+
+set(CPACK_PACKAGE_NAME libhermit)
+set(CPACK_SYSTEM_NAME all)
+
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 1)
+set(CPACK_PACKAGE_VERSION_PATCH 0)
+
+set(CPACK_PACKAGE_CONTACT "Daniel Krebs <github@daniel-krebs.net>")
+
+# build .deb, .rpm and .tar.bz2 packages
+set(CPACK_GENERATOR DEB;RPM;TBZ2)
+
+# needed in order for tests and bechmark to use correct install prefix
+set(CPACK_SET_DESTDIR on)
+
+## Debian specific
+# not dependent on Debian system architecture
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
+
+## RPM specific
+# libhermit is currently not relocatable
+set(CPACK_PACKAGE_RELOCATABLE FALSE)
+
+include(CPack)
