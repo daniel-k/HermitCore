@@ -5,16 +5,26 @@ include(../../cmake/HermitCore.cmake)
 
 add_custom_command(
 	OUTPUT
-		${CMAKE_CURRENT_LIST_DIR}/config.h
-	DEPENDS
-		${CMAKE_CURRENT_LIST_DIR}/config.h.in
-		${HERMIT_ROOT}/configure
 		${HERMIT_ROOT}/config.status
+	DEPENDS
+		${HERMIT_ROOT}/configure
 	WORKING_DIRECTORY
 		${HERMIT_ROOT}
 	USES_TERMINAL
 	COMMAND
 		./configure -q -n
+)
+
+add_custom_command(
+	OUTPUT
+		${CMAKE_CURRENT_LIST_DIR}/config.h
+	DEPENDS
+		${CMAKE_CURRENT_LIST_DIR}/config.h.in
+		${HERMIT_ROOT}/config.status
+	WORKING_DIRECTORY
+		${HERMIT_ROOT}
+	USES_TERMINAL
+	COMMAND
 		./config.status --header=include/hermit/config.h
 )
 add_custom_target(config-h DEPENDS ${CMAKE_CURRENT_LIST_DIR}/config.h)
