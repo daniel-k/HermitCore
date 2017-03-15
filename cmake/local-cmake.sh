@@ -37,7 +37,7 @@ echo "$PATH" | grep "${CMAKE_DIR_REL}" &>/dev/null && return
 if [ ! -d "${CMAKE_DIR}" ]
 then
 	echo "-- Downloading CMake"
-	wget -q --show-progress "${URL}" -O "${ARCHIVE}" ||
+	wget "${URL}" -O "${ARCHIVE}" ||
 		(echo "Cannot download CMake"; return)
 
 	echo "-- Unpacking CMake"
