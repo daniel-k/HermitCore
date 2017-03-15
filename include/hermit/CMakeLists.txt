@@ -8,11 +8,13 @@ add_custom_command(
 		${CMAKE_CURRENT_LIST_DIR}/config.h
 	DEPENDS
 		${CMAKE_CURRENT_LIST_DIR}/config.h.in
+		${HERMIT_ROOT}/configure
 		${HERMIT_ROOT}/config.status
 	WORKING_DIRECTORY
 		${HERMIT_ROOT}
 	USES_TERMINAL
 	COMMAND
+		./configure -q -n
 		./config.status --header=include/hermit/config.h
 )
 add_custom_target(config-h DEPENDS ${CMAKE_CURRENT_LIST_DIR}/config.h)
