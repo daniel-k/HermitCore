@@ -81,7 +81,12 @@ add_custom_command(
 						 --rename-section .data=.kdata
 						 $<TARGET_FILE:hermit>)
 
+# deploy libhermit.a and its headers
 deploy(hermit ${TARGET_ARCH}/lib libhermit)
+install(DIRECTORY ${HERMIT_ROOT}/include/hermit
+	DESTINATION ${TARGET_ARCH}/include/
+	FILES_MATCHING PATTERN "*.h")
+
 
 ### External projects
 
