@@ -112,8 +112,8 @@ add_dependencies(hermit libiomp)
 
 # relocate external libraries to our install destination
 install(DIRECTORY ${EXTERNALS_BASE_DIR}/
-	DESTINATION ${CMAKE_INSTALL_PREFIX}/)
-
+	DESTINATION ${CMAKE_INSTALL_PREFIX}/
+	USE_SOURCE_PERMISSIONS)
 
 ### Examples
 # include applications at the end so they can depend on libhermit and other
