@@ -3,6 +3,8 @@ project(hermit_tools)
 
 include(../cmake/HermitCore-Paths.cmake)
 
+add_compile_options(-std=c99)
+
 add_executable(proxy proxy.c uhyve.c)
 target_link_libraries(proxy -pthread)
 
