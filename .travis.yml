@@ -12,6 +12,7 @@ before_install:
   - git submodule update --init lwip usr/libomp
 
 script:
+  - source cmake/local-cmake.sh
   - mkdir build
   - cd build
   - cmake ..
