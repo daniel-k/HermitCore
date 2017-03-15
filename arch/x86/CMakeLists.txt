@@ -17,7 +17,7 @@ add_definitions(-D__KERNEL__)
 
 add_library(${X86_KERNEL_ASM_TARGET} OBJECT
 	kernel/entry.asm
-	kernel/string.asm)
+	libkern/string.asm)
 
 # HACK: We need to post-process the objects by running elfedit on them, but
 #       there is currently no way to get the list of objects out of CMake
