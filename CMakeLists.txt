@@ -85,6 +85,16 @@ deploy(hermit ${TARGET_ARCH}/lib libhermit)
 
 ### External projects
 
+# HermitCore's own tools such as Qemu/KVM proxy
+ExternalProject_Add(tools
+	SOURCE_DIR ${HERMIT_ROOT}/tools
+	INSTALL_COMMAND
+		${CMAKE_COMMAND} --build <BINARY_DIR>
+		                 --target install --
+		                     DESTDIR=${EXTERNALS_INTERMEDIATE_DIR}
+	CMAKE_ARGS
+		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+
 # Intel's OpenMP runtime for x86
 ExternalProject_Add(libiomp
 	SOURCE_DIR ${HERMIT_ROOT}/usr/libomp
