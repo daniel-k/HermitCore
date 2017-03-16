@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 3.7)
-include(../../cmake/HermitCore.cmake)
+include(../../cmake/HermitCore-Application.cmake)
 
 project(hermit_openmpbench C)
-
-add_compile_options(${HERMIT_APP_FLAGS})
-
-# link against local libhermit.a instead of the one supplied with the
-# toolchain, if built from top-level
-link_directories(${CMAKE_BINARY_DIR} ${EXTERNALS_LIB_DIR})
 
 add_executable(syncbench syncbench.c common.c)
 target_link_libraries(syncbench PUBLIC -fopenmp)
