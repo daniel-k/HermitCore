@@ -17,17 +17,5 @@ add_executable(stream stream.c)
 target_compile_options(stream PRIVATE -fopenmp)
 target_link_libraries(stream -fopenmp)
 
-get_property(TARGETS
-    DIRECTORY .
-    PROPERTY BUILDSYSTEM_TARGETS)
-
-# deploy all targets with install and also provide uninstall target
-deploy("${TARGETS}" extra/benchmarks benchmarks)
-
-if(TARGET hermit)
-	# add dependency on hermit, so that everything will be built *after*
-	# libhermit in order to link against the freshly compiled version
-	foreach(TARGET ${TARGETS})
-		add_dependencies(${TARGET} hermit)
-	endforeach()
-endif()
+# deployment
+install_local_targets(extra/benchmarks)

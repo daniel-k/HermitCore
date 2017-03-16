@@ -89,45 +89,40 @@ install(DIRECTORY ${HERMIT_ROOT}/include/hermit
 
 
 ### External projects
+#
+# Build projects externally and deploy into temporary common prefix, will later
+# be relocated for installation.
 
-# HermitCore's own tools such as Qemu/KVM proxy
-ExternalProject_Add(tools
-	SOURCE_DIR ${HERMIT_ROOT}/tools
-	INSTALL_COMMAND
-		${CMAKE_COMMAND} --build <BINARY_DIR>
-		                 --target install --
-		                     DESTDIR=${EXTERNALS_INTERMEDIATE_DIR}
-	CMAKE_ARGS
-		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+## HermitCore's own tools such as Qemu/KVM proxy
+build_external(tools ${HERMIT_ROOT}/tools "")
 
-# Intel's OpenMP runtime for x86
-ExternalProject_Add(libiomp
-	SOURCE_DIR ${HERMIT_ROOT}/usr/libomp
-	# install to intermediate third-party libs location
-	INSTALL_COMMAND
-		${CMAKE_COMMAND} --build <BINARY_DIR>
-		                 --target install --
-		                     DESTDIR=${EXTERNALS_INTERMEDIATE_DIR}
-	CMAKE_ARGS
+## Intel's OpenMP runtime for x86 (libomp)
+build_external(libiomp ${HERMIT_ROOT}/usr/libomp ""
 		-DHERMIT=1
 		-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
 		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/${TARGET_ARCH})
 
+# libomp is part of HermitCore's runtime and should be available before any
+# application will link
 add_dependencies(hermit libiomp)
 
+## iRCCE
+build_external(ircce ${HERMIT_ROOT}/usr/ircce "")
+add_dependencies(hermit ircce)
+
+## XRay profiler
+build_external(xray ${HERMIT_ROOT}/usr/xray "")
+add_dependencies(hermit xray)
+
+## Tests and benchmarks
+build_external(tests ${HERMIT_ROOT}/usr/tests hermit)
+build_external(benchmarks ${HERMIT_ROOT}/usr/benchmarks hermit)
+build_external(openmpbench ${HERMIT_ROOT}/usr/openmpbench hermit)
+
 # relocate external libraries to our install destination
-install(DIRECTORY ${EXTERNALS_BASE_DIR}/
+install(DIRECTORY ${EXTERNALS_PREFIX_DIR}/
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/
 	USE_SOURCE_PERMISSIONS)
-
-### Examples
-# include applications at the end so they can depend on libhermit and other
-# external runtimes that are freshly built
-
-add_subdirectory(usr/benchmarks)
-add_subdirectory(usr/tests)
-add_subdirectory(usr/openmpbench)
-add_subdirectory(usr/xray)
 
 
 ### Packaging

@@ -9,6 +9,11 @@ set(CMAKE_INSTALL_PREFIX /opt/hermit)
 
 # we install 3rd party libraries to an intermediate directory and relocate them
 # later when installing the whole project
-set(EXTERNALS_INTERMEDIATE_DIR ${CMAKE_BINARY_DIR}/externals)
-set(EXTERNALS_BASE_DIR ${EXTERNALS_INTERMEDIATE_DIR}/${CMAKE_INSTALL_PREFIX})
-set(EXTERNALS_LIB_DIR ${EXTERNALS_BASE_DIR}/lib)
+if(NOT EXTERNALS_BASE_DIR)
+	# will be injected into external project because CMAKE_BINARY_DIR will be
+	# different there
+	set(EXTERNALS_BASE_DIR ${CMAKE_BINARY_DIR}/externals)
+endif()
+set(EXTERNALS_PREFIX_DIR ${EXTERNALS_BASE_DIR}/${CMAKE_INSTALL_PREFIX})
+set(EXTERNALS_LIB_DIR ${EXTERNALS_PREFIX_DIR}/lib)
+set(EXTERNALS_LIB_ARCH_DIR ${EXTERNALS_PREFIX_DIR}/${TARGET_ARCH}/lib)

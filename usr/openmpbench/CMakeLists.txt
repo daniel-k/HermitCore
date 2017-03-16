@@ -17,20 +17,5 @@ target_link_libraries(common_sched PUBLIC -fopenmp)
 add_executable(schedbench schedbench.c)
 target_link_libraries(schedbench common_sched)
 
-get_property(TARGETS
-    DIRECTORY .
-    PROPERTY BUILDSYSTEM_TARGETS)
-
-# do not deploy common_schedbench
-list(REMOVE_ITEM TARGETS common_sched)
-
-# deploy all targets with install and also provide uninstall target
-deploy("${TARGETS}" extra/benchmarks openmpbench)
-
-if(TARGET hermit)
-	# add dependency on hermit, so that everything will be built *after*
-	# libhermit in order to link against the freshly compiled version
-	foreach(TARGET ${TARGETS})
-		add_dependencies(${TARGET} hermit)
-	endforeach()
-endif()
+# deployment: exclude common_sched
+install_local_targets(extra/benchmarks common_sched)
