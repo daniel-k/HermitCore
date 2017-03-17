@@ -71,7 +71,9 @@ add_library(hermit STATIC ${KERNEL_OBJECTS})
 # dependency makes sure that this is done before hermit is linked
 add_dependencies(hermit ${X86_KERNEL_TARGET})
 
-# rename sections in final library
+# rename sections in final library and copy into prefix directory so all
+# subsequent targets can link against the freshly built version (as opposed
+# to linking against the version supplied by the toolchain)
 add_custom_command(
 	TARGET
 		hermit POST_BUILD
@@ -79,7 +81,11 @@ add_custom_command(
 		${CMAKE_OBJCOPY} --rename-section .bss=.kbss
 						 --rename-section .text=.ktext
 						 --rename-section .data=.kdata
-						 $<TARGET_FILE:hermit>)
+						 $<TARGET_FILE:hermit>
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+								$<TARGET_FILE:hermit>
+								${EXTERNALS_LIB_ARCH_DIR})
 
 # deploy libhermit.a and its headers
 deploy(hermit ${TARGET_ARCH}/lib libhermit)
