@@ -8,6 +8,20 @@ if(NOT HERMIT_ARCH)
 	set(HERMIT_ARCH x86)
 endif()
 
+if(PROFILING)
+	message("Do profiling!")
+
+	# link everything against XRay
+	list(APPEND CMAKE_C_STANDARD_LIBRARIES -lxray)
+	list(APPEND CMAKE_CXX_STANDARD_LIBRARIES -lxray)
+
+	# enable profiling with XRay
+	add_compile_options(-falign-functions=32 -finstrument-functions
+		-finstrument-functions-exclude-function-list=_mm_pause,_mm_setcsr,_mm_getcsr)
+	add_definitions(-DXRAY -DXRAY_DISABLE_BROWSER_INTEGRATION
+					-DXRAY_NO_DEMANGLE -DXRAY_ANNOTATE)
+endif()
+
 # use default toolchain if not specified by user
 if(NOT CMAKE_TOOLCHAIN_FILE)
 	set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/HermitCore-Toolchain-${HERMIT_ARCH}.cmake)

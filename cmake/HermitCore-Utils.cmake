@@ -53,6 +53,10 @@ endmacro(set_parent)
 # any additional parameters will be handed over to the cmake command that the
 # external project is invoked with
 macro(build_external NAME PATH DEPENDS)
+	if("${NAME}" IN_LIST PROFILE_APPS)
+		set(DO_PROFILING "-DPROFILING=true")
+	endif()
+
 	ExternalProject_Add(${NAME}
 		SOURCE_DIR ${PATH}
 		DEPENDS ${DEPENDS}
@@ -64,7 +68,10 @@ macro(build_external NAME PATH DEPENDS)
 			-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 			-DLOCAL_PREFIX_BASE_DIR=${LOCAL_PREFIX_BASE_DIR}
 			-DCMAKE_INSTALL_MESSAGE=NEVER
+			${DO_PROFILING}
 			${ARGN})
+
+	unset(DO_PROFILING)
 
 	ExternalProject_Add_Step(${NAME} relink
 		COMMAND find . -maxdepth 1 -type f -executable -exec rm {} "\\\;"
