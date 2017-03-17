@@ -15,9 +15,10 @@ target_compile_definitions(xray
 		-DXRAY_NO_DEMANGLE
 		-DXRAY_DISABLE_BROWSER_INTEGRATION)
 
-# deploy all targets with install and also provide uninstall target
-deploy(xray ${TARGET_ARCH}/lib xray)
+# deployment
+install(TARGETS xray
+	DESTINATION ${TARGET_ARCH}/lib)
 install(FILES libxray.spec
-		DESTINATION ${TARGET_ARCH}/lib)
+	DESTINATION ${TARGET_ARCH}/lib)
 install(FILES xray.h
-		DESTINATION ${TARGET_ARCH}/include)
+	DESTINATION ${TARGET_ARCH}/include)

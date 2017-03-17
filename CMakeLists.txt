@@ -87,11 +87,11 @@ add_custom_command(
 								$<TARGET_FILE:hermit>
 								${LOCAL_PREFIX_ARCH_LIB_DIR})
 
-# deploy libhermit.a and its headers
-deploy(hermit ${TARGET_ARCH}/lib libhermit)
-install(DIRECTORY ${HERMIT_ROOT}/include/hermit
-	DESTINATION ${TARGET_ARCH}/include/
-	FILES_MATCHING PATTERN "*.h")
+# deploy libhermit.a and headers for package creation
+install(TARGETS hermit
+	DESTINATION ${TARGET_ARCH}/lib)
+install(DIRECTORY include/hermit
+	DESTINATION ${TARGET_ARCH}/include/)
 
 
 ### External projects
