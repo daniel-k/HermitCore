@@ -71,21 +71,33 @@ add_library(hermit STATIC ${KERNEL_OBJECTS})
 # dependency makes sure that this is done before hermit is linked
 add_dependencies(hermit ${X86_KERNEL_TARGET})
 
-# rename sections in final library and copy into prefix directory so all
-# subsequent targets can link against the freshly built version (as opposed
-# to linking against the version supplied by the toolchain)
 add_custom_command(
 	TARGET
 		hermit POST_BUILD
+	# rename sections in final library
 	COMMAND
 		${CMAKE_OBJCOPY} --rename-section .bss=.kbss
 						 --rename-section .text=.ktext
 						 --rename-section .data=.kdata
 						 $<TARGET_FILE:hermit>
+
+	# copy libhermit.a into local prefix directory so that all subsequent
+	# targets can link against the freshly built version (as opposed to
+	# linking against the one supplied by the toolchain)
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${LOCAL_PREFIX_ARCH_LIB_DIR}
 	COMMAND
 		${CMAKE_COMMAND} -E copy_if_different
-								$<TARGET_FILE:hermit>
-								${LOCAL_PREFIX_ARCH_LIB_DIR})
+							$<TARGET_FILE:hermit>
+							${LOCAL_PREFIX_ARCH_LIB_DIR}/
+
+	# and also copy headers into local prefix
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${LOCAL_PREFIX_ARCH_INCLUDE_DIR}/hermit
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+							${HERMIT_ROOT}/include/hermit/*.{h,inc}
+							${LOCAL_PREFIX_ARCH_INCLUDE_DIR}/hermit/)
 
 # deploy libhermit.a and headers for package creation
 install(TARGETS hermit
@@ -97,7 +109,7 @@ install(DIRECTORY include/hermit
 ### External projects
 #
 # Build projects externally and deploy into temporary common prefix, will later
-# be relocated for installation.
+# be relocated for installation
 
 ## HermitCore's own tools such as Qemu/KVM proxy
 build_external(tools ${HERMIT_ROOT}/tools "")
@@ -125,7 +137,7 @@ build_external(tests ${HERMIT_ROOT}/usr/tests hermit)
 build_external(benchmarks ${HERMIT_ROOT}/usr/benchmarks hermit)
 build_external(openmpbench ${HERMIT_ROOT}/usr/openmpbench hermit)
 
-# relocate external libraries to our install destination
+## relocate the local prefix to our install destination
 install(DIRECTORY ${LOCAL_PREFIX_DIR}/
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/
 	USE_SOURCE_PERMISSIONS)

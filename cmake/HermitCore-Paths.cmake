@@ -19,6 +19,7 @@ endif()
 # this directory structure
 set(LOCAL_PREFIX_DIR ${LOCAL_PREFIX_BASE_DIR}/${CMAKE_INSTALL_PREFIX})
 set(LOCAL_PREFIX_ARCH_DIR ${LOCAL_PREFIX_DIR}/${TARGET_ARCH})
+set(LOCAL_PREFIX_ARCH_INCLUDE_DIR ${LOCAL_PREFIX_ARCH_DIR}/include)
 
 # when building applications within the HermitCore project (tests, ...) they
 # will link prefarably against libraries in this directory in order to test
