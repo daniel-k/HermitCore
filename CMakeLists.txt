@@ -85,7 +85,7 @@ add_custom_command(
 	COMMAND
 		${CMAKE_COMMAND} -E copy_if_different
 								$<TARGET_FILE:hermit>
-								${EXTERNALS_LIB_ARCH_DIR})
+								${LOCAL_PREFIX_ARCH_LIB_DIR})
 
 # deploy libhermit.a and its headers
 deploy(hermit ${TARGET_ARCH}/lib libhermit)
@@ -126,7 +126,7 @@ build_external(benchmarks ${HERMIT_ROOT}/usr/benchmarks hermit)
 build_external(openmpbench ${HERMIT_ROOT}/usr/openmpbench hermit)
 
 # relocate external libraries to our install destination
-install(DIRECTORY ${EXTERNALS_PREFIX_DIR}/
+install(DIRECTORY ${LOCAL_PREFIX_DIR}/
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/
 	USE_SOURCE_PERMISSIONS)
 
