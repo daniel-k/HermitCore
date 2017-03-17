@@ -53,26 +53,26 @@ endmacro(set_parent)
 # any additional parameters will be handed over to the cmake command that the
 # external project is invoked with
 macro(build_external NAME PATH DEPENDS)
-ExternalProject_Add(${NAME}
-	SOURCE_DIR ${PATH}
-	DEPENDS ${DEPENDS}
-	INSTALL_COMMAND
-		${CMAKE_COMMAND} --build <BINARY_DIR>
-		                 --target install --
-		                 DESTDIR=${LOCAL_PREFIX_BASE_DIR}
-	CMAKE_ARGS
-		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-		-DLOCAL_PREFIX_BASE_DIR=${LOCAL_PREFIX_BASE_DIR}
-		-DCMAKE_INSTALL_MESSAGE=NEVER
-		${ARGN})
+	ExternalProject_Add(${NAME}
+		SOURCE_DIR ${PATH}
+		DEPENDS ${DEPENDS}
+		INSTALL_COMMAND
+			${CMAKE_COMMAND} --build <BINARY_DIR>
+			                 --target install --
+			                   DESTDIR=${LOCAL_PREFIX_BASE_DIR}
+		CMAKE_ARGS
+			-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+			-DLOCAL_PREFIX_BASE_DIR=${LOCAL_PREFIX_BASE_DIR}
+			-DCMAKE_INSTALL_MESSAGE=NEVER
+			${ARGN})
 
-ExternalProject_Add_Step(${NAME} relink
-    COMMAND find . -maxdepth 1 -type f -executable -exec rm {} "\\\;"
-    DEPENDEES configure
-    DEPENDERS build
-    WORKING_DIRECTORY <BINARY_DIR>)
+	ExternalProject_Add_Step(${NAME} relink
+		COMMAND find . -maxdepth 1 -type f -executable -exec rm {} "\\\;"
+		DEPENDEES configure
+		DEPENDERS build
+		WORKING_DIRECTORY <BINARY_DIR>)
 
-ExternalProject_Add_StepDependencies(${NAME} relink ${DEPENDS})
+	ExternalProject_Add_StepDependencies(${NAME} relink ${DEPENDS})
 endmacro(build_external)
 
 
