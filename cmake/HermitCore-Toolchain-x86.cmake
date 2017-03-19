@@ -1,4 +1,7 @@
-set(TOOLCHAIN_BIN_DIR /opt/hermit/bin)
+if(NOT TOOLCHAIN_BIN_DIR)
+	set(TOOLCHAIN_BIN_DIR /opt/hermit/bin)
+endif()
+
 set(TARGET_ARCH x86_64-hermit)
 
 set(CMAKE_SYSTEM_NAME Generic)
