@@ -96,7 +96,11 @@ add_custom_command(
 		${CMAKE_COMMAND} -E make_directory ${LOCAL_PREFIX_ARCH_INCLUDE_DIR}/hermit
 	COMMAND
 		${CMAKE_COMMAND} -E copy_if_different
-							${HERMIT_ROOT}/include/hermit/*.{h,inc}
+							${HERMIT_ROOT}/include/hermit/*.h
+							${LOCAL_PREFIX_ARCH_INCLUDE_DIR}/hermit/
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+							${HERMIT_ROOT}/include/hermit/*.inc
 							${LOCAL_PREFIX_ARCH_INCLUDE_DIR}/hermit/)
 
 # deploy libhermit.a and headers for package creation
