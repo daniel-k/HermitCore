@@ -1,11 +1,14 @@
+include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Utils.cmake)
+
 # root of HermitCore project
 set(HERMIT_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 
-# where to install compiled binaries
-set(HERMIT_BIN_DIR ${HERMIT_ROOT}/bin)
-
-# define our own install prefix
-set(CMAKE_INSTALL_PREFIX /opt/hermit)
+# set default install prefix if user doesn't specify one
+if(${CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT})
+	# See CMake docs for reference:
+	# https://cmake.org/cmake/help/v3.7/variable/CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT.html
+	set(CMAKE_INSTALL_PREFIX /opt/hermit CACHE PATH "..." FORCE)
+endif()
 
 # we install 3rd party libraries to an intermediate directory and relocate
 # them here later when installing the whole project
