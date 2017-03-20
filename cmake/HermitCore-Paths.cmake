@@ -1,4 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Utils.cmake)
+# no include guard here because we have to include this file twice to correctly
+# set CMAKE_INSTALL_PREFIX
 
 # root of HermitCore project
 set(HERMIT_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)

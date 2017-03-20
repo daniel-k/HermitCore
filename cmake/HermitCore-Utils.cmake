@@ -1,3 +1,10 @@
+macro(include_guard)
+	if(DEFINED "_INCLUDE_GUARD_${CMAKE_CURRENT_LIST_FILE}")
+		return()
+	endif()
+	set("_INCLUDE_GUARD_${CMAKE_CURRENT_LIST_FILE}" INCLUDED)
+endmacro(include_guard)
+
 macro(add_kernel_module_sources MODULE SOURCE_GLOB)
 	file(GLOB SOURCES "${SOURCE_GLOB}")
 

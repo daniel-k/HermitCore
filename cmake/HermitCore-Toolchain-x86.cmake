@@ -1,4 +1,5 @@
 include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Utils.cmake)
+include_guard()
 
 # let user provide a different path to the toolchain
 set_default(TOOLCHAIN_BIN_DIR /opt/hermit/bin)

@@ -1,4 +1,5 @@
 include(${CMAKE_CURRENT_LIST_DIR}/HermitCore.cmake)
+include_guard()
 
 add_compile_options(${HERMIT_APP_FLAGS})
 
