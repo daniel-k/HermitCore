@@ -102,6 +102,13 @@ macro(install_local_targets PATH)
 
 	install(TARGETS ${_TARGETS}
 		DESTINATION ${PATH})
+
+	# if there are any .map files for profiling, install them too
+	foreach(TARGET ${_TARGETS})
+		install(FILES $<TARGET_FILE:${TARGET}>.map
+			DESTINATION ${PATH}
+			OPTIONAL)
+	endforeach()
 endmacro(install_local_targets)
 
 # set variable if not yet set

@@ -11,11 +11,13 @@ if(NOT HERMIT_ARCH)
 endif()
 
 if(PROFILING)
-	message("Do profiling!")
+	message("Let's do profiling!")
 
 	# link everything against XRay
-	list(APPEND CMAKE_C_STANDARD_LIBRARIES -lxray)
-	list(APPEND CMAKE_CXX_STANDARD_LIBRARIES -lxray)
+	link_libraries(-lxray)
+
+	# generate symbol map file for XRay to resolve function names
+	link_libraries(-Wl,-Map=$<TARGET_PROPERTY:NAME>.map)
 
 	# enable profiling with XRay
 	add_compile_options(-falign-functions=32 -finstrument-functions
