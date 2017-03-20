@@ -96,3 +96,10 @@ macro(install_local_targets PATH)
 	install(TARGETS ${_TARGETS}
 		DESTINATION ${PATH})
 endmacro(install_local_targets)
+
+# set variable if not yet set
+macro(set_default VARNAME)
+	if(NOT ${VARNAME})
+		set(${VARNAME} ${ARGN})
+	endif()
+endmacro(set_default)

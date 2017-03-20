@@ -1,6 +1,7 @@
-if(NOT TOOLCHAIN_BIN_DIR)
-	set(TOOLCHAIN_BIN_DIR /opt/hermit/bin)
-endif()
+include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Utils.cmake)
+
+# let user provide a different path to the toolchain
+set_default(TOOLCHAIN_BIN_DIR /opt/hermit/bin)
 
 set(TARGET_ARCH x86_64-hermit)
 
