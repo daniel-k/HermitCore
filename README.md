@@ -1,44 +1,70 @@
 # HermitCore - A lightweight unikernel for a scalable and predictable runtime behavior
 
-The project [HermitCore](http://www.hermitcore.org) is new [unikernel](http://unikernel.org) targeting at a scalable and predictable runtime for high-performance and cloud computing.
-HermitCore extends the multi-kernel approach (like [McKernel](http://www-sys-aics.riken.jp/ResearchTopics/os/mckernel.html)) with unikernel features for a better programmability and scalability for hierarchical systems.
-On the startup of HermitCore applications, cores are isolated from the Linux system enabling the bare-metal of the applications on these cores.
-This approach achieves lower OS jitter and a better scalability compared to full-weight kernels.
-Inter-kernel communication between HermitCore applications and the Linux system is realized by means of an IP interface.
+The project [HermitCore]( http://www.hermitcore.org ) is a new [unikernel](
+http://unikernel.org ) targeting a scalable and predictable runtime for
+high-performance and cloud computing. HermitCore extends the multi-kernel
+approach (like [McKernel](
+http://www-sys-aics.riken.jp/ResearchTopics/os/mckernel.html )) with unikernel
+features for a better programmability and scalability for hierarchical systems.
 
-In addition to the multi-kernel approach described above, HermitCore can be used as classical standalone unikernel as well.
-In this case HermitCore runs a single-kernel exclusively on the hardware or within a virtual machine.
-This reduces the resource demand and improves the boot time which is critical for cloud computing applications.
-It is the result of a research project at RWTH Aachen University and is currently an experimental approach, i.e., not production ready.
-Please use it with caution.
+
+On the startup of HermitCore applications, cores are isolated from the Linux
+system enabling bare-metal execution of on these cores. This approach achieves
+lower OS jitter and a better scalability compared to full-weight kernels.
+Inter-kernel communication between HermitCore applications and the Linux system
+is realized by means of an IP interface.
+
+In addition to the multi-kernel approach described above, HermitCore can be used
+as a classical standalone unikernel as well. In this case, HermitCore runs a
+single-kernel exclusively on the hardware or within a virtual machine. This
+reduces the resource demand and loweres the boot time which is critical for
+cloud computing applications. It is the result of a research project at RWTH
+Aachen University and is currently an experimental approach, i.e., not
+production ready. Please use it with caution.
+
 
 ## Requirements
 
-The build process works currently only on **x86-based Linux** systems. The following software packets are required to build HermitCore on a Linux system:
+The build process works currently only on **x86-based Linux** systems. To build
+the HermitCore kernel and applications for it you need:
 
-* Netwide Assembler (NASM)
-* GNU Make, GNU Binutils
-* Tools and libraries to build *linux*, *binutils* and *gcc* (e.g. flex, bison, MPFR library, GMP library, MPC library, ISL library)
-* texinfo
-* Qemu
+ * CMake
+ * Netwide Assember (NASM)
+ * recent host compiler such as GCC
+ * HermitCore cross-toolchain, i.e. Binutils, GCC, newlib, pthreads-embedded
 
-On Debian-based systems the packets can be installed by executing:
-```
-  sudo apt-get install qemu-system-x86  nasm texinfo libmpfr-dev libmpc-dev libgmp-dev libisl-dev flex bison
+### HermitCore cross-toolchain
+
+We provide prebuilt packages (currently Debian-based only) of the HermitCore
+toolchain, which can be installed as follows:
+
+```bash
+$ echo "deb [trusted=yes] https://dl.bintray.com/rwth-os/hermitcore vivid main" | sudo tee -a /etc/apt/sources.list
+$ sudo apt-get -qq update
+$ sudo apt-get install binutils-hermit newlib-hermit pthread-embedded-hermit gcc-hermit libhermit
 ```
 
-## Installing HermitCore with by using debian packets
+This toolchain is able to build applications for [classical unikernel](
+#building-and-testing-hermitcore-as-classical-standalone-unikernel )
+environments within virtual machines or bare-metal in a multi-kernel
+environment. For the latter, you have to install a modified Linux kernel. An
+introduction to this execution mode is provided in section [Building and testing
+HermitCore as multi-kernel on a real machine](
+#building-and-testing-hermitcore-as-multi-kernel-on a-real-machine ).
 
-We provide binary packets for debian-based systems containing the complete HermitCore toolchain including a cross-compiler.
-To install the packets you have to execute the following commands:
-```
-echo "deb [trusted=yes] https://dl.bintray.com/rwth-os/hermitcore vivid main" | sudo tee -a /etc/apt/sources.list
-sudo apt-get -qq update
-sudo apt-get install binutils-hermit newlib-hermit pthread-embedded-hermit gcc-hermit libhermit
-```
-This toolchain is able to build applications for [classical unikernel](#building-and-testing-hermitcore-as-classical-standalone-unikernel) environments within virtual machines or bare-metal in a multi-kernel environment.
-For the latter, you have to install the modified Linux kernel.
-An introduction to this execution mode is provided in section [Building and testing HermitCore as multi-kernel on a real machine](#building-and-testing-hermitcore-as-multi-kernel-on a-real-machine).
+If you want to build the toolchain yourself, have a look at the following
+repositories, especially at `debian/rules`:
+
+ * [GCC](https://github.com/RWTH-OS/gcc)
+ * [Binutils](https://github.com/RWTH-OS/binutils)
+ * [Newlib](https://github.com/RWTH-OS/newlib)
+ * [Pthread-embedded](https://github.com/RWTH-OS/pthread-embedded)
+
+Depending on how you want to use HermitCore, you might need additional packages
+such as:
+
+ * Qemu (`apt-get install qemu-system-x86`)
+
 
 ## Building and testing HermitCore as multi-kernel within a virtual machine
 
@@ -66,6 +92,7 @@ An introduction to this execution mode is provided in section [Building and test
    Per default, the Linux system has the IP address `192.168.28.1`.
    The HermitCore isles starts with the IP address `192.168.28.2` for isle 0 and is increased by one for every isle.
 10. More HermitCore applications are available at `/hermit/usr/{tests,benchmarks}` which is a shared directory between the host and QEmu.
+
 
 ## Building and testing HermitCore as multi-kernel on a real machine
 
@@ -96,29 +123,36 @@ NETMASK=255.255.255.0
 IPADDR=192.168.28.1
 NM_CONTROLLED=yes
 ```
+
 Finally, follow the [above tutorial](#building-and-testing-hermitcore-within-a-virtual-machine) from Step 5.
 The demo applications are located in their subdirectories `usr/{tests,benchmarks}`.
 
+
 ## Building and testing HermitCore as classical standalone unikernel
 
-HermitCore applications can be directly started as standalone kernel within a virtual machine.
-In this case, [iRCCE](http://www.lfbs.rwth-aachen.de/publications/files/iRCCE.pdf) is not supported.
-Please build HermitCore and register the loader in the same way as done for the multi-kernel version (see [Building and testing HermitCore on a real machine](#building-and-testing-hermitcore-on-a-real-machine)).
-If the environment variable `HERMIT_ISLE` is set to `qemu`, the application will be started within a VM.
-Please note that the loader requires QEMU and uses per default *KVM*.
-Furthermore, it expects that the executable is called `qemu-system-x86_64`.
-You can adapt the name by setting the environment variable `HERMIT_QEMU`.
+HermitCore applications can be directly started as standalone kernel within a
+virtual machine. In this case, [iRCCE](
+http://www.lfbs.rwth-aachen.de/publications/files/iRCCE.pdf ) is not supported.
+Please build HermitCore and register the loader in the same way as done for the
+multi-kernel version (see [Building and testing HermitCore on a real machine](
+#building-and-testing-hermitcore-on-a-real-machine )). If the environment
+variable `HERMIT_ISLE` is set to `qemu`, the application will be started within
+a VM. Please note that the loader requires QEMU and uses per default *KVM*.
+Furthermore, it expects that the executable is called `qemu-system-x86_64`. You
+can adapt the name by setting the environment variable `HERMIT_QEMU`.
 
-In this context, the environment variable `HERMIT_CPUS` specifies the number of cpus (and no longer a range of core ids).
-Furthermore, the variable `HERMIT_MEM` defines the memory size of the virtual machine.
-The suffix of *M* or *G* can be used to specify a value in megabytes or gigabytes respectively.
-Per default, the loader initializes a system with one core and 2 GiB RAM.
+In this context, the environment variable `HERMIT_CPUS` specifies the number of
+cpus (and no longer a range of core ids). Furthermore, the variable `HERMIT_MEM`
+defines the memory size of the virtual machine. The suffix of *M* or *G* can be
+used to specify a value in megabytes or gigabytes respectively. Per default, the
+loader initializes a system with one core and 2 GiB RAM.
 
-The virtual machine opens two TCP/IP ports.
-One is used for the communication between HermitCore application and its proxy.
-The second port is used to create a connection via telnet to QEMU's system monitor.
-With the environment variable `HERMIT_PORT`, the default port (18766) can be changed for the communication between the HermitCore application and its proxy.
-The connection to the system monitor used automatically `HERMIT_PORT+1`, i.e., the default port is 18767.
+The virtual machine opens two TCP/IP ports. One is used for the communication
+between HermitCore application and its proxy. The second port is used to create
+a connection via telnet to QEMU's system monitor. With the environment variable
+`HERMIT_PORT`, the default port (18766) can be changed for the communication
+between the HermitCore application and its proxy. The connection to the system
+monitor used automatically `HERMIT_PORT+1`, i.e., the default port is 18767.
 
 The following example starts the stream benchmark in a virtual machine, which has 4 cores and 6GB memory.
 ```
