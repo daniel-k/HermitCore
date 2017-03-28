@@ -158,14 +158,12 @@ $ # using uHyve
 $ HERMIT_ISLE=uhyve bin/proxy extra/tests/hello
 ```
 
-If the environment variable `HERMIT_ISLE` is set to `qemu`, the application will
-be started within a QEMU VM. Please note that the loader requires QEMU and uses
-per default *KVM*. Furthermore, it expects that the executable is called
-`qemu-system-x86_64`.
+With `HERMIT_ISLE=qemu`, the application will be started within a QEMU VM.
+Please note that the loader requires QEMU and uses per default *KVM*.
+Furthermore, it expects that the executable is called `qemu-system-x86_64`.
 
-If the environment variable `HERMIT_ISLE` is set to `uhyve`, the application
-will be started within a thin hypervisor powered by Linux's KVM API and
-therefore requires *KVM* support.
+With `HERMIT_ISLE=hyve`, the application will be started within a thin
+hypervisor powered by Linux's KVM API and therefore requires *KVM* support.
 
 In this context, the environment variable `HERMIT_CPUS` specifies the number of
 cpus (and no longer a range of core ids). Furthermore, the variable `HERMIT_MEM`
@@ -180,7 +178,7 @@ a connection via telnet to QEMU's system monitor. With the environment variable
 between the HermitCore application and its proxy. The connection to the system
 monitor used automatically `HERMIT_PORT+1`, i.e., the default port is 18767.
 
-The following example starts the stream benchmark in a virtual machine, which
+The following command starts the stream benchmark in a virtual machine, which
 has 4 cores and 6GB memory.
 
 ```bash
