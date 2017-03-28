@@ -33,7 +33,7 @@ endmacro(get_kernel_modules)
 
 
 # find program in /toolchain/dir/prefix-NAME, only supply NAME
-macro(find_toolchain_program NAME)
+function(find_toolchain_program NAME)
 
     string(TOUPPER "${NAME}" NAME_UPPER)
     string(TOLOWER "${NAME}" NAME_LOWER)
@@ -48,7 +48,7 @@ macro(find_toolchain_program NAME)
         message(FATAL_ERROR
 				"Cannot find ${_CMAKE_TOOLCHAIN_PREFIX}${NAME_LOWER}")
     endif()
-endmacro(find_toolchain_program)
+endfunction(find_toolchain_program)
 
 
 macro(set_parent VAR VALUE)
@@ -114,7 +114,7 @@ endfunction(build_external)
 
 
 # additional arguments are be treated as targets that will be excluded
-macro(install_local_targets PATH)
+function(install_local_targets PATH)
 	get_property(_TARGETS
 		DIRECTORY .
 		PROPERTY BUILDSYSTEM_TARGETS)
@@ -132,7 +132,7 @@ macro(install_local_targets PATH)
 			DESTINATION ${PATH}
 			OPTIONAL)
 	endforeach()
-endmacro(install_local_targets)
+endfunction(install_local_targets)
 
 # set variable if not yet set
 macro(set_default VARNAME)
