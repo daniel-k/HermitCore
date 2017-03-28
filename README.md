@@ -89,7 +89,7 @@ directory.
 
 ## Testing
 
-### Testing HermitCore as multi-kernel within a virtual machine
+### As multi-kernel within a virtual machine
 
 ```bash
 $ cd build
@@ -141,7 +141,7 @@ More HermitCore applications are available at `/hermit/usr/{tests,benchmarks}`
 which is a shared directory between the host and QEMU.
 
 
-### Testing HermitCore as classical standalone unikernel
+### As classical standalone unikernel within a virtual machine
 
 HermitCore applications can be directly started as standalone kernel within a
 virtual machine. In this case,
@@ -164,6 +164,8 @@ Furthermore, it expects that the executable is called `qemu-system-x86_64`.
 
 With `HERMIT_ISLE=hyve`, the application will be started within a thin
 hypervisor powered by Linux's KVM API and therefore requires *KVM* support.
+uHyve has a considerably smaller startup time than QEMU, but lacks some features
+such as GDB debugging.
 
 In this context, the environment variable `HERMIT_CPUS` specifies the number of
 cpus (and no longer a range of core ids). Furthermore, the variable `HERMIT_MEM`
@@ -186,25 +188,57 @@ $ HERMIT_ISLE=qemu HERMIT_CPUS=4 HERMIT_MEM=6G bin/proxy extra/benchmarks/stream
 ```
 
 
-### Testing HermitCore as multi-kernel on a real machine
+### As multi-kernel on a real machine
 
 *Note*: to launch HermitCore applications, root privileges are required.
 
-1. In principle you have to follow the tutorial above.
-   After the configuration, building of the cross-compilers and all example application (Step 5 in the [above tutorial](#testing-hermitcore-within-a-virtual-machine)), a modified Linux kernel has to be installed.
-   Please clone the repository with the [modified Linux kernel](https://github.com/RWTH-OS/linux).
-   Afterwards switch to the branch `hermit` for a relative new vanilla kernel or to `centos`, which is compatible to the current CentOS 7 kernel.
-   Configure the kernel with `make menuconfig` for your system.
-   Be sure, that the option `CONFIG_HERMIT_CORE` in `Processor type and features` is enabled.
-2. Install the Linux kernel and its initial ramdisk on your system (see descriptions of your Linux distribution).
-   We recommend to disable Linux NO_HZ feature by setting the kernel parameter `nohz=off`.
-3. After a reboot of the system, register the HermitCore loader at your system with following command: `sudo -c sh 'echo ":hermit:M:7:\\x42::/path2proyxy/proxy:" > /proc/sys/fs/binfmt_misc/register'`, in which `path2proxy` defines the path to the loader.
-   You find the loader `proxy` after building the HermiCore sources in the subdirectory `tools` of the directory, which contains this *README*.
-4. The IP device between HermitCore and Linux currently does not support IPv6.
-   Consequently, disable IPv6 by adding following line to `/etc/sysctl.conf`: `net.ipv6.conf.mmnif.disable_ipv6 = 1`.
-5. Per default, the IP device uses a static IP address range.
-   Linux has to use `162.168.28.1`, where HermitCore isles start with `192.168.28.2` (isle 0).
-   The network manager must be configured accordingly and therefore the file `/etc/sysconfig/network-scripts/ifcfg-mmnif` must be created with the following content:
+A [modified Linux kernel](https://github.com/RWTH-OS/linux) has to be installed.
+Afterwards switch to the branch `hermit` for a relative new vanilla kernel or to
+`centos`, which is compatible to the current CentOS 7 kernel. Configure the
+kernel with `make menuconfig` for your system. Be sure, that the option
+`CONFIG_HERMIT_CORE` in `Processor type and features` is enabled. 
+
+```bash
+$ git clone https://github.com/RWTH-OS/linux
+$ cd linux
+$ # see comments above
+$ git checkout hermit
+$ make menuconfig
+$ make
+```
+
+Install the Linux kernel and its initial ramdisk on your system (see
+descriptions of your Linux distribution). We recommend to disable Linux NO_HZ
+feature by setting the kernel parameter `nohz=off`.
+
+Install HermitCore to your system (by default to `/opt/hermit`):
+
+```bash
+$ cd build
+$ sudo make install
+$ ls -l /opt/hermit
+```
+
+After a reboot of the system, register the HermitCore loader at your system with
+following command:
+
+```bash
+$ sudo -c sh 'echo ":hermit:M:7:\\x42::/opt/hermit/bin/proxy:" > /proc/sys/fs/binfmt_misc/register'
+```
+
+The IP device between HermitCore and Linux currently does not support IPv6.
+Consequently, disable it (might be slightly different on your distribution):
+
+```bash
+$ echo 'net.ipv6.conf.mmnif.disable_ipv6 = 1' | sudo tee /etc/sysctl.conf
+```
+
+Per default, the IP device uses a static IP address range. Linux has to use
+`162.168.28.1`, where HermitCore isles start with `192.168.28.2` (isle 0). The
+interface is `mmnif`.
+
+Please configure your network accordingly. For CentOS, you have to create the
+file `/etc/sysconfig/network-scripts/ifcfg-mmnif`:
 
 ```
 DEVICE=mmnif
@@ -216,11 +250,15 @@ IPADDR=192.168.28.1
 NM_CONTROLLED=yes
 ```
 
-Finally, follow the [above tutorial](#testing-hermitcore-within-a-virtual-machine) from Step 5.
-The demo applications are located in their subdirectories `usr/{tests,benchmarks}`.
+You can now start applications the same way as from within a virtual machine
+(see description above).
+
+
+## Profiling
 
 
 
+## Debugging
 
 
 ## Building HermitCore applications
