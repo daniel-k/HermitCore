@@ -77,3 +77,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Paths.cmake)
 
 # find elfedit, CMake doesn't use this program, so we have to find it ourself
 find_toolchain_program(elfedit)
+
+
+message("CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")

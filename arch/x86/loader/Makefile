@@ -45,8 +45,8 @@ $(NAME).elf: $(OBJS)
 	$Q$(LD) $(LDFLAGS) -o $@ $(OBJS)
 	@echo [OBJCOPY] $(NAME).sym
 	$Q$(OBJCOPY) $(KEEP_DEBUG) $(NAME).elf $(NAME).sym
-	@echo [OBJCOPY] $(NAME).elf
-	$Q$(OBJCOPY) $(STRIP_DEBUG) $(OUTPUT_FORMAT) $(NAME).elf
+#	@echo [OBJCOPY] $(NAME).elf
+#	$Q$(OBJCOPY) $(STRIP_DEBUG) $(OUTPUT_FORMAT) $(NAME).elf
 
 #qemu:
 #	@echo "Do you already start netcat (nc -l 4555)?"
