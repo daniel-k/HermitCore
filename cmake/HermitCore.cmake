@@ -60,6 +60,11 @@ set(HERMIT_KERNEL_FLAGS
 set(HERMIT_APP_FLAGS
 					-m64 -mtls-direct-seg-refs -O3 -ftree-vectorize)
 
+if(MTUNE)
+	set(HERMIT_KERNEL_FLAGS ${HERMIT_KERNEL_FLAGS} -mtune=${MTUNE})
+	set(HERMIT_APP_FLAGS    ${HERMIT_APP_FLAGS}    -mtune=${MTUNE})
+endif()
+
 set(HERMIT_KERNEL_INCLUDES
     ${HERMIT_ROOT}/include
     ${HERMIT_ROOT}/arch/${HERMIT_ARCH}/include

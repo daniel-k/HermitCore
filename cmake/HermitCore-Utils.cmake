@@ -56,13 +56,35 @@ macro(set_parent VAR VALUE)
 	set(${VAR} ${VALUE})
 endmacro(set_parent)
 
+function(get_cmd_variables VAR)
+	set(_OUTPUT "")
+
+	get_cmake_property(vs VARIABLES)
+
+	foreach(v ${vs})
+		get_property(_HELPSTRING
+			CACHE ${v}
+			PROPERTY HELPSTRING)
+		if("${_HELPSTRING}" STREQUAL "No help, variable specified on the command line.")
+			list(APPEND _OUTPUT "${v}")
+		endif()
+	endforeach()
+
+	set(${VAR} ${_OUTPUT} PARENT_SCOPE)
+endfunction(get_cmd_variables)
 
 # any additional parameters will be handed over to the cmake command that the
 # external project is invoked with
-macro(build_external NAME PATH DEPENDS)
+function(build_external NAME PATH DEPENDS)
 	if("${NAME}" IN_LIST PROFILE_APPS)
 		set(DO_PROFILING "-DPROFILING=true")
 	endif()
+
+	# pass through all command line variables
+	get_cmd_variables(CMD_VAR_NAMES)
+	foreach(var ${CMD_VAR_NAMES})
+		set(CMD_VARS ${CMD_VARS} -D${var}=${${var}})
+	endforeach()
 
 	ExternalProject_Add(${NAME}
 		SOURCE_DIR ${PATH}
@@ -76,10 +98,10 @@ macro(build_external NAME PATH DEPENDS)
 			-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 			-DLOCAL_PREFIX_BASE_DIR=${LOCAL_PREFIX_BASE_DIR}
 			-DCMAKE_INSTALL_MESSAGE=NEVER
+			--no-warn-unused-cli
 			${DO_PROFILING}
+			${CMD_VARS}
 			${ARGN})
-
-	unset(DO_PROFILING)
 
 	ExternalProject_Add_Step(${NAME} relink
 		COMMAND find . -maxdepth 1 -type f -executable -exec rm {} "\\\;"
@@ -88,7 +110,7 @@ macro(build_external NAME PATH DEPENDS)
 		WORKING_DIRECTORY <BINARY_DIR>)
 
 	ExternalProject_Add_StepDependencies(${NAME} relink ${DEPENDS})
-endmacro(build_external)
+endfunction(build_external)
 
 
 # additional arguments are be treated as targets that will be excluded
