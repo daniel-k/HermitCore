@@ -27,12 +27,13 @@ production ready. Please use it with caution.
 ## Requirements
 
 The build process works currently only on **x86-based Linux** systems. To build
-the HermitCore kernel and applications for it you need:
+the HermitCore kernel and applications you need:
 
  * CMake
  * Netwide Assember (NASM)
  * recent host compiler such as GCC
  * HermitCore cross-toolchain, i.e. Binutils, GCC, newlib, pthreads-embedded
+
 
 ### HermitCore cross-toolchain
 
@@ -45,16 +46,8 @@ $ sudo apt-get -qq update
 $ sudo apt-get install binutils-hermit newlib-hermit pthread-embedded-hermit gcc-hermit libhermit
 ```
 
-This toolchain is able to build applications for [classical unikernel](
-#testing-hermitcore-as-classical-standalone-unikernel )
-environments within virtual machines or bare-metal in a multi-kernel
-environment. For the latter, you have to install a modified Linux kernel. An
-introduction to this execution mode is provided in section [Building and testing
-HermitCore as multi-kernel on a real machine](
-#testing-hermitcore-as-multi-kernel-on a-real-machine ).
-
 If you want to build the toolchain yourself, have a look at the following
-repositories, especially at `debian/rules`:
+repositories, especially at `debian/rules` in each repository:
 
  * [GCC](https://github.com/RWTH-OS/gcc)
  * [Binutils](https://github.com/RWTH-OS/binutils)
@@ -67,6 +60,37 @@ such as:
  * Qemu (`apt-get install qemu-system-x86`)
 
 
+## CMake requirements
+
+We require a fairly recent version of CMake (`3.7`) which is not yet present in
+most Linux distributions. We therefore provide a helper script that fetches the
+required CMake binaries from the upstream project and stores them locally, so
+you only need to download it once.
+
+```bash
+$ . cmake/local-cmake.sh
+-- Downloading CMake
+--2017-03-28 16:13:37--  https://cmake.org/files/v3.7/cmake-3.7.2-Linux-x86_64.tar.gz
+Loaded CA certificate '/etc/ssl/certs/ca-certificates.crt'
+Resolving cmake.org... 66.194.253.19
+Connecting to cmake.org|66.194.253.19|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 30681434 (29M) [application/x-gzip]
+Saving to: ‘cmake-3.7.2-Linux-x86_64.tar.gz’
+
+cmake-3.7.2-Linux-x86_64.tar.gz         100%[===================>]  29,26M  3,74MB/s    in 12s     
+
+2017-03-28 16:13:50 (2,48 MB/s) - ‘cmake-3.7.2-Linux-x86_64.tar.gz’ saved [30681434/30681434]
+
+-- Unpacking CMake
+-- Local CMake v3.7.2 installed to cmake/cmake-3.7.2-Linux-x86_64
+-- Next time you source this script, no download will be neccessary
+```
+
+So before you build HermitCore you have to source the `local-cmake.sh` script
+everytime you open a new terminal.
+
+	
 ## Building HermitCore
 
 ```bash
