@@ -83,7 +83,7 @@ its location to the `cmake` command above like so:
 $ cmake -DTOOLCHAIN_BIN_DIR=/home/user/hermit/bin
 ```
 
-assuming that binary like `x86_64-hermit-gcc` and friends are located in that
+assuming that binaries like `x86_64-hermit-gcc` and friends are located in that
 directory.
 
 
@@ -91,19 +91,17 @@ directory.
 
 ### Testing HermitCore as multi-kernel within a virtual machine
 
-At the end of this *README* in section *Tips* you find hints to enable
-optimization for the target.
-
 ```bash
 $ cd build
 $ make qemu
+$ # or 'make qemu-dep' to build HermitCore dependencies before
 ```
 
 Within the QEmu session you can start HermitCore application just the same as
 traditional Linux programs:
 
 ```bash
-QEMu $ /hermit/extra/tests/hello
+QEMU $ /hermit/extra/tests/hello
 smpboot: CPU 1 is now offline
 Hello World!!!
 argv[0] = /hermit/extra/tests/hello
@@ -112,8 +110,6 @@ Hostname: hermit.localdomain
 x86: Booting SMP configuration:
 smpboot: Booting Node 0 Processor 1 APIC 0x1
 ```
-
-#### Explanations
 
 Per default, the virtual machine has 10 cores, 2 NUMA nodes, and 8 GiB RAM.
 Inside the VM runs a small Linux system, which already includes the patches for
@@ -143,6 +139,53 @@ address `192.168.28.2` for isle 0 and is increased by one for every isle.
 
 More HermitCore applications are available at `/hermit/usr/{tests,benchmarks}`
 which is a shared directory between the host and QEmu.
+
+
+### Testing HermitCore as classical standalone unikernel
+
+HermitCore applications can be directly started as standalone kernel within a
+virtual machine. In this case,
+[iRCCE](http://www.lfbs.rwth-aachen.de/publications/files/iRCCE.pdf ) is not
+supported.
+
+```bash
+$ cd build
+$ make install DESTDIR=~/hermit-build
+$ cd ~/hermit-build/opt/hermit
+$ # using QEmu
+$ HERMIT_ISLE=qemu bin/proxy extra/tests/hello
+$ # using uHyve
+$ HERMIT_ISLE=uhyve bin/proxy extra/tests/hello
+```
+
+If the environment variable `HERMIT_ISLE` is set to `qemu`, the application will
+be started within a QEmu VM. Please note that the loader requires QEmu and uses
+per default *KVM*. Furthermore, it expects that the executable is called
+`qemu-system-x86_64`.
+
+If the environment variable `HERMIT_ISLE` is set to `uhyve`, the application
+will be started within a thin hypervisor powered by Linux's KVM API and
+therefore requires *KVM* support.
+
+In this context, the environment variable `HERMIT_CPUS` specifies the number of
+cpus (and no longer a range of core ids). Furthermore, the variable `HERMIT_MEM`
+defines the memory size of the virtual machine. The suffix of *M* or *G* can be
+used to specify a value in megabytes or gigabytes respectively. Per default, the
+loader initializes a system with one core and 2 GiB RAM.
+
+The virtual machine opens two TCP/IP ports. One is used for the communication
+between HermitCore application and its proxy. The second port is used to create
+a connection via telnet to QEMU's system monitor. With the environment variable
+`HERMIT_PORT`, the default port (18766) can be changed for the communication
+between the HermitCore application and its proxy. The connection to the system
+monitor used automatically `HERMIT_PORT+1`, i.e., the default port is 18767.
+
+The following example starts the stream benchmark in a virtual machine, which
+has 4 cores and 6GB memory.
+
+```bash
+$ HERMIT_ISLE=qemu HERMIT_CPUS=4 HERMIT_MEM=6G bin/proxy extra/benchmarks/stream
+```
 
 
 ### Testing HermitCore as multi-kernel on a real machine
@@ -179,36 +222,6 @@ Finally, follow the [above tutorial](#testing-hermitcore-within-a-virtual-machin
 The demo applications are located in their subdirectories `usr/{tests,benchmarks}`.
 
 
-### Testing HermitCore as classical standalone unikernel
-
-HermitCore applications can be directly started as standalone kernel within a
-virtual machine. In this case, [iRCCE](
-http://www.lfbs.rwth-aachen.de/publications/files/iRCCE.pdf ) is not supported.
-Please build HermitCore and register the loader in the same way as done for the
-multi-kernel version (see [Building and testing HermitCore on a real machine](
-#testing-hermitcore-on-a-real-machine )). If the environment
-variable `HERMIT_ISLE` is set to `qemu`, the application will be started within
-a VM. Please note that the loader requires QEMU and uses per default *KVM*.
-Furthermore, it expects that the executable is called `qemu-system-x86_64`. You
-can adapt the name by setting the environment variable `HERMIT_QEMU`.
-
-In this context, the environment variable `HERMIT_CPUS` specifies the number of
-cpus (and no longer a range of core ids). Furthermore, the variable `HERMIT_MEM`
-defines the memory size of the virtual machine. The suffix of *M* or *G* can be
-used to specify a value in megabytes or gigabytes respectively. Per default, the
-loader initializes a system with one core and 2 GiB RAM.
-
-The virtual machine opens two TCP/IP ports. One is used for the communication
-between HermitCore application and its proxy. The second port is used to create
-a connection via telnet to QEMU's system monitor. With the environment variable
-`HERMIT_PORT`, the default port (18766) can be changed for the communication
-between the HermitCore application and its proxy. The connection to the system
-monitor used automatically `HERMIT_PORT+1`, i.e., the default port is 18767.
-
-The following example starts the stream benchmark in a virtual machine, which has 4 cores and 6GB memory.
-```
-HERMIT_ISLE=qemu HERMIT_CPUS=4 HERMIT_MEM=6G usr/benchmarks/stream
-```
 
 
 
