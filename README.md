@@ -97,11 +97,11 @@ $ make qemu
 $ # or 'make qemu-dep' to build HermitCore dependencies before
 ```
 
-Within the QEmu session you can start HermitCore application just the same as
+Within the QEMU session you can start HermitCore application just the same as
 traditional Linux programs:
 
 ```bash
-QEMU $ /hermit/extra/tests/hello
+(QEMU) $ /hermit/extra/tests/hello
 smpboot: CPU 1 is now offline
 Hello World!!!
 argv[0] = /hermit/extra/tests/hello
@@ -138,7 +138,7 @@ has the IP address `192.168.28.1`. The HermitCore isles starts with the IP
 address `192.168.28.2` for isle 0 and is increased by one for every isle.
 
 More HermitCore applications are available at `/hermit/usr/{tests,benchmarks}`
-which is a shared directory between the host and QEmu.
+which is a shared directory between the host and QEMU.
 
 
 ### Testing HermitCore as classical standalone unikernel
@@ -152,14 +152,14 @@ supported.
 $ cd build
 $ make install DESTDIR=~/hermit-build
 $ cd ~/hermit-build/opt/hermit
-$ # using QEmu
+$ # using QEMU
 $ HERMIT_ISLE=qemu bin/proxy extra/tests/hello
 $ # using uHyve
 $ HERMIT_ISLE=uhyve bin/proxy extra/tests/hello
 ```
 
 If the environment variable `HERMIT_ISLE` is set to `qemu`, the application will
-be started within a QEmu VM. Please note that the loader requires QEmu and uses
+be started within a QEMU VM. Please note that the loader requires QEMU and uses
 per default *KVM*. Furthermore, it expects that the executable is called
 `qemu-system-x86_64`.
 
@@ -250,12 +250,12 @@ For network support, you have to link the Go application with the flag `-lnetgo`
    For instance, `--with-mtune=native` optimzes the code for the host system.
    Please note, if the applications is started within a VM, the hypervisor has to support the specified architecture name.
    Per default the system will be accelerated by KVM and the host architecture will be used as target processor.
-2. If Qemu is started by our proxy and the environment variable `HERMIT_KVM` is set to `0`, the virtual machine will be not accelerated by KVM.
+2. If QEMU is started by our proxy and the environment variable `HERMIT_KVM` is set to `0`, the virtual machine will be not accelerated by KVM.
    In this case, the configuration flag `--with-mtune=name` should be avoided.
    With the environment variable `HERMIT_APP_PORT`, an additional port can be open to establish an TCP/IP connection with your application.
 3. By setting the environment variable `HERMIT_VERBOSE` to `1`, the proxy prints at termination the kernel log messages onto the screen.
-4. If `HERMIT_DEBUG` is set to `1`, Qemu will establish an gdbserver, which will be listen port 1234.
+4. If `HERMIT_DEBUG` is set to `1`, QEMU will establish an gdbserver, which will be listen port 1234.
    Afterwards you are able debug HermitCore applications remotely.
-5. By setting the environment variable `HERMIT_CAPTURE_NET` to `1` and `HERMIT_ISLE` to `qemu`, Qemu captures the network traffic and
+5. By setting the environment variable `HERMIT_CAPTURE_NET` to `1` and `HERMIT_ISLE` to `qemu`, QEMU captures the network traffic and
    creates the trace file *qemu-vlan0.pcap*. For instance with [Wireshark](https://www.wireshark.org) you are able to analyze the file.
-6. If `HERMIT_MONITOR` is set to `1` and `HERMIT_ISLE` to `qemu`, Qemu establishes a monitor which is available via telnet at port 18767.
+6. If `HERMIT_MONITOR` is set to `1` and `HERMIT_ISLE` to `qemu`, QEMU establishes a monitor which is available via telnet at port 18767.
