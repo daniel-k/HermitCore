@@ -278,44 +278,66 @@ You can now start applications the same way as from within a virtual machine
 (see description above).
 
 
+## Building your own HermitCore applications
+
+You can take `usr/tests` as a starting point to build your own applications. All
+that is required is that you include
+`[...]/HermitCore/cmake/HermitCore-Application.cmake` in your application's
+`CMakeLists.txt`. It doesn't have to reside inside the HermitCore repository.
+Other than that, it should behave like normal CMake.
+
+
 ## Profiling
 
+We provide profiling support via the XRay profiler. See `usr/xray/README.md` for
+more information on how to use it.
 
 
 ## Debugging
 
+If the application is started from inside `make qemu`, it can be debugged via
+GDB by connecting to port 1234. When run via proxy, set `HERMIT_DEBUG=1`.
 
-## Building HermitCore applications
+```
+$ gdb extra/tests/hello
+(gdb) target extended-remote :1234
+Remote debugging using :1234
+0xffffffff8100b542 in ?? ()
+```
 
-After successful building of HermitCore and its demo applications (see above), HermitCore’s cross toolchain (*gcc*, *g++*, *gfortran*, *gccgo*, *objdump*, etc.) is located at the subdiretory `usr/x86` of the directory, which contains this *README*.
-To use these tools, add `usr/x86/bin` to your environment variable `PATH`.
-As with any other cross toolchain, the tool names begin with the target architecture (*x86_64*) and the name of the operating system (*hermit*).
-For instance, `x86_64-hermit-gcc` stands for the GNU C compiler, which is able to build HermitCore applications.
-
-All tools can be used as the well-known GNU tools. Only the Go compiler works different to the typical workflow.
-Instead of building Go application like
-```
-go build main.go
-```
-you have to use the compiler as follows
-```
-x86_64-hermit-gccgo -pthread -Wall -o main main.go
-```
-For network support, you have to link the Go application with the flag `-lnetgo`.
 
 ## Tips
 
-1. The configuration flag `--with-mtune=name` specifies the name of the target processor for which GCC should tune the performance of the code.
-   You can use any architecture name, which is supported by GCC.
-   For instance, `--with-mtune=native` optimzes the code for the host system.
-   Please note, if the applications is started within a VM, the hypervisor has to support the specified architecture name.
-   Per default the system will be accelerated by KVM and the host architecture will be used as target processor.
-2. If QEMU is started by our proxy and the environment variable `HERMIT_KVM` is set to `0`, the virtual machine will be not accelerated by KVM.
-   In this case, the configuration flag `--with-mtune=name` should be avoided.
-   With the environment variable `HERMIT_APP_PORT`, an additional port can be open to establish an TCP/IP connection with your application.
-3. By setting the environment variable `HERMIT_VERBOSE` to `1`, the proxy prints at termination the kernel log messages onto the screen.
-4. If `HERMIT_DEBUG` is set to `1`, QEMU will establish an gdbserver, which will be listen port 1234.
-   Afterwards you are able debug HermitCore applications remotely.
-5. By setting the environment variable `HERMIT_CAPTURE_NET` to `1` and `HERMIT_ISLE` to `qemu`, QEMU captures the network traffic and
-   creates the trace file *qemu-vlan0.pcap*. For instance with [Wireshark](https://www.wireshark.org) you are able to analyze the file.
-6. If `HERMIT_MONITOR` is set to `1` and `HERMIT_ISLE` to `qemu`, QEMU establishes a monitor which is available via telnet at port 18767.
+### Optimization
+
+You can configure the `-mtune=name` compiler flag by adding `-DMTUNE=name` to
+the `cmake` command when configuring the project.
+
+Please note, if the applications is started within a VM, the hypervisor has to
+support the specified architecture name.
+
+If QEMU is started by our proxy and the environment variable `HERMIT_KVM` is set
+to `0`, the virtual machine will be not accelerated by KVM. In this case, the
+`-mtune` flag should be avoided.
+
+### TCP connections
+
+With the environment variable `HERMIT_APP_PORT`, an additional port can be open
+to establish an TCP/IP connection with your application.
+
+### Dumping the kernel log
+
+By setting the environment variable `HERMIT_VERBOSE` to `1`, the proxy prints at
+termination the kernel log messages onto the screen.
+
+### Network tracing
+
+By setting the environment variable `HERMIT_CAPTURE_NET` to `1` and
+`HERMIT_ISLE` to `qemu`, QEMU captures the network traffic and creates the trace
+file *qemu-vlan0.pcap*. For instance with [Wireshark](https://www.wireshark.org)
+you are able to analyze the file.
+
+### Monitor
+
+If `HERMIT_MONITOR` is set to `1` and `HERMIT_ISLE` to `qemu`, QEMU establishes
+a monitor which is available via telnet at port 18767.
