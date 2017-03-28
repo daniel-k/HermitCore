@@ -66,6 +66,7 @@ macro(build_external NAME PATH DEPENDS)
 
 	ExternalProject_Add(${NAME}
 		SOURCE_DIR ${PATH}
+		BUILD_ALWAYS 1
 		DEPENDS ${DEPENDS}
 		INSTALL_COMMAND
 			${CMAKE_COMMAND} --build <BINARY_DIR>
