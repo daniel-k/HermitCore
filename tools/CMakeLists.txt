@@ -9,4 +9,7 @@ add_executable(proxy proxy.c uhyve.c)
 target_link_libraries(proxy -pthread)
 
 install(TARGETS proxy
-		DESTINATION bin)
+	DESTINATION bin)
+
+install(FILES init.sh
+	DESTINATION tools)

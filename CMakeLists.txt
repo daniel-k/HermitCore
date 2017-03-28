@@ -148,6 +148,33 @@ install(DIRECTORY ${LOCAL_PREFIX_DIR}/
 	USE_SOURCE_PERMISSIONS)
 
 
+### QEmu
+# Start HermitCore as multi-kernel in a QEmu VM
+
+add_custom_target(qemu
+	COMMAND
+		qemu-system-x86_64
+			-machine accel=kvm -cpu host
+			-smp 10 -m 8G -numa node,nodeid=0,cpus=0-4 -numa node,nodeid=1,cpus=5-9
+			-kernel ${HERMIT_ROOT}/config/bzImage
+			-append "root=/dev/ram0 rootfstype=ramfs init=init console=ttyS0"
+			-net nic,model=rtl8139 -net user -net dump
+			-nographic -monitor telnet:127.0.0.1:1235,server,nowait
+			-fsdev local,security_model=none,id=fsdev0,path=${LOCAL_PREFIX_DIR}
+			-device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hermit
+			-s
+	USES_TERMINAL VERBATIM)
+
+# create a QEmu target that depends on everything
+get_property(_TARGETS
+	DIRECTORY .
+	PROPERTY BUILDSYSTEM_TARGETS)
+
+add_custom_target(qemu-dep
+	DEPENDS
+		${_TARGETS} qemu)
+
+
 ### Packaging
 
 set(CPACK_PACKAGE_NAME libhermit)
