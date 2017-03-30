@@ -57,7 +57,7 @@ repositories, especially at `debian/rules` in each repository:
 Depending on how you want to use HermitCore, you might need additional packages
 such as:
 
- * Qemu (`apt-get install qemu-system-x86`)
+ * QEMU (`apt-get install qemu-system-x86`)
 
 
 ## CMake requirements
