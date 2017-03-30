@@ -2,6 +2,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Utils.cmake)
 include_guard()
 
 include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Paths.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/HermitCore-Configuration.cmake)
 
 # scripts to detect HermitCore Go compiler
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/golang/)
@@ -40,7 +41,7 @@ enable_language(ASM_NASM)
 # CMake explicitly will remove it when adding includes the usual way
 # Note: Has to be set *after* ASM_NASM is enabled
 set(CMAKE_ASM_NASM_FLAGS
-	"${CMAKE_ASM_NASM_FLAGS} -I ${HERMIT_ROOT}/include/hermit/")
+	"${CMAKE_ASM_NASM_FLAGS} -I ${CMAKE_BINARY_DIR}/include/")
 
 set(HERMIT_KERNEL_FLAGS
 					-m64 -Wall -O2 -mno-red-zone
@@ -64,6 +65,7 @@ if(MTUNE)
 endif()
 
 set(HERMIT_KERNEL_INCLUDES
+    ${CMAKE_BINARY_DIR}/include
     ${HERMIT_ROOT}/include
     ${HERMIT_ROOT}/arch/${HERMIT_ARCH}/include
     ${HERMIT_ROOT}/lwip/src/include

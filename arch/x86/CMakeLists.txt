@@ -60,7 +60,8 @@ file(GLOB MM_SOURCES		"mm/*.c")
 # add boot.h as source to mark dependency boot.asm -> boot.h -> apic.c
 add_library(${X86_KERNEL_C_TARGET} OBJECT
 	${KERNEL_SOURCES} ${MM_SOURCES}
-	${CMAKE_BINARY_DIR}/boot.h)
+	${CMAKE_BINARY_DIR}/boot.h
+	${CMAKE_BINARY_DIR}/include/hermit/config.h)
 
 target_include_directories(${X86_KERNEL_C_TARGET} BEFORE
 	PUBLIC ${HERMIT_KERNEL_INCLUDES}
