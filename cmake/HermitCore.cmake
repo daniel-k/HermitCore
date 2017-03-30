@@ -41,7 +41,7 @@ enable_language(ASM_NASM)
 # CMake explicitly will remove it when adding includes the usual way
 # Note: Has to be set *after* ASM_NASM is enabled
 set(CMAKE_ASM_NASM_FLAGS
-	"${CMAKE_ASM_NASM_FLAGS} -I ${CMAKE_BINARY_DIR}/include/")
+	"${CMAKE_ASM_NASM_FLAGS} -I ${GENERATED_CONFIG_DIR}/")
 
 set(HERMIT_KERNEL_FLAGS
 					-m64 -Wall -O2 -mno-red-zone
