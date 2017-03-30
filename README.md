@@ -295,8 +295,9 @@ more information on how to use it.
 
 ## Debugging
 
-If the application is started from inside `make qemu`, it can be debugged via
-GDB by connecting to port 1234. When run via proxy, set `HERMIT_DEBUG=1`.
+If the application is started via `make qemu`, debugging via GDB is enabled by
+default on port 1234. When run via proxy (`HERMIT_ISLE=qemu`), set
+`HERMIT_DEBUG=1`.
 
 ```
 $ gdb extra/tests/hello
