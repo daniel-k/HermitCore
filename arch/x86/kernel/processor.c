@@ -32,7 +32,7 @@
 #include <hermit/processor.h>
 #include <hermit/tasks.h>
 #include <hermit/logging.h>
-#include <asm/multiboot.h>
+#include <hermit/kernel_arguments.h>
 
 /*
  * Note that linker symbols are not variables, they have no memory allocated for
@@ -44,14 +44,12 @@ extern const void percore_end;
 extern void* Lpatch0;
 extern void* Lpatch1;
 extern void* Lpatch2;
-extern atomic_int32_t current_boot_id;
 
 extern void isrsyscall(void);
 
 cpu_info_t cpu_info = { 0, 0, 0, 0, 0};
 static char cpu_vendor[13] = {[0 ... 12] = 0};
 static char cpu_brand[4*3*sizeof(uint32_t)+1] = {[0 ... 4*3*sizeof(uint32_t)] = 0};
-extern uint32_t cpu_freq;
 
 static void default_save_fpu_state(union fpu_state* state)
 {
@@ -232,15 +230,15 @@ uint32_t detect_cpu_frequency(void)
 	uint64_t start, end, diff;
 	uint64_t ticks, old;
 
-	if (BUILTIN_EXPECT(cpu_freq > 0, 0))
-		return cpu_freq;
+	if (BUILTIN_EXPECT(kernel_arguments.cpu_freq > 0, 0))
+		return kernel_arguments.cpu_freq;
 
-	cpu_freq = get_frequency_from_mbinfo();
-	if (cpu_freq > 0)
-		return cpu_freq;
-	cpu_freq = get_frequency_from_brand();
-	if (cpu_freq > 0)
-		return cpu_freq;
+	kernel_arguments.cpu_freq = get_frequency_from_mbinfo();
+	if (kernel_arguments.cpu_freq > 0)
+		return kernel_arguments.cpu_freq;
+	kernel_arguments.cpu_freq = get_frequency_from_brand();
+	if (kernel_arguments.cpu_freq > 0)
+		return kernel_arguments.cpu_freq;
 
 	old = get_clock_tick();
 
@@ -256,10 +254,10 @@ uint32_t detect_cpu_frequency(void)
 	rmb();
 	end = rdtsc();
 
-	diff = end > start ? end - start : start - end;
-	cpu_freq = (uint32_t) ((TIMER_FREQ*diff) / (1000000ULL*3ULL));
+	diff = end - start;
+	kernel_arguments.cpu_freq = (uint32_t) ((TIMER_FREQ*diff) / (1000000ULL*3ULL));
 
-	return cpu_freq;
+	return kernel_arguments.cpu_freq;
 }
 
 static int get_min_pstate(void)
@@ -529,16 +527,16 @@ int cpu_detection(void) {
 
 	writefs(0);
 #if MAX_CORES > 1
-	writegs(atomic_int32_read(&current_boot_id) * ((size_t) &percore_end0 - (size_t) &percore_start));
+	writegs(atomic_int32_read(&kernel_arguments.current_boot_id) * ((size_t) &percore_end0 - (size_t) &percore_start));
 #else
 	writegs(0);
 #endif
 	wrmsr(MSR_KERNEL_GS_BASE, 0);
 
-	LOG_INFO("Core %d set per_core offset to 0x%x\n", atomic_int32_read(&current_boot_id), rdmsr(MSR_GS_BASE));
+	LOG_INFO("Core %d set per_core offset to 0x%x\n", atomic_int32_read(&kernel_arguments.current_boot_id), rdmsr(MSR_GS_BASE));
 
 	/* set core id to the current boot id */
-	set_per_core(__core_id, atomic_int32_read(&current_boot_id));
+	set_per_core(__core_id, atomic_int32_read(&kernel_arguments.current_boot_id));
 	LOG_INFO("Core id is set to %d\n", CORE_ID);
 
 	if (has_fpu()) {
@@ -672,8 +670,8 @@ int cpu_detection(void) {
 
 uint32_t get_cpu_frequency(void)
 {
-	if (cpu_freq > 0)
-		return cpu_freq;
+	if (kernel_arguments.cpu_freq > 0)
+		return kernel_arguments.cpu_freq;
 
 	return detect_cpu_frequency();
 }

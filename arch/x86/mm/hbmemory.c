@@ -32,6 +32,7 @@
 #include <hermit/spinlock.h>
 #include <hermit/memory.h>
 #include <hermit/logging.h>
+#include <hermit/kernel_arguments.h>
 
 #include <asm/atomic.h>
 #include <asm/page.h>
@@ -42,8 +43,6 @@ typedef struct free_list {
 	struct free_list* prev;
 } free_list_t;
 
-extern size_t hbmem_base;
-extern size_t hbmem_size;
 
 static spinlock_t list_lock = SPINLOCK_INIT;
 
@@ -149,21 +148,21 @@ out_err:
 
 int is_hbmem_available(void)
 {
-	return (hbmem_base != 0);
+	return (kernel_arguments.hbmem_base != 0);
 }
 
 int hbmemory_init(void)
 {
-	if (!hbmem_base)
+	if (!is_hbmem_available())
 		return 0;
 
 	// determine available memory
-	atomic_int64_add(&total_pages, hbmem_size >> PAGE_BITS);
-	atomic_int64_add(&total_available_pages, hbmem_size >> PAGE_BITS);
+	atomic_int64_add(&total_pages, kernel_arguments.hbmem_size >> PAGE_BITS);
+	atomic_int64_add(&total_available_pages, kernel_arguments.hbmem_size >> PAGE_BITS);
 
 	//initialize free list
-	init_list.start = hbmem_base;
-	init_list.end = hbmem_base + hbmem_size;
+	init_list.start = kernel_arguments.hbmem_base;
+	init_list.end = kernel_arguments.hbmem_base + kernel_arguments.hbmem_size;
 
 	LOG_INFO("free list for hbmem starts at 0x%zx, limit 0x%zx\n", init_list.start, init_list.end);
 

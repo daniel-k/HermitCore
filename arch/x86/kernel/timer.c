@@ -33,6 +33,7 @@
 #include <hermit/errno.h>
 #include <hermit/spinlock.h>
 #include <hermit/logging.h>
+#include <hermit/kernel_arguments.h>
 #include <asm/irq.h>
 #include <asm/irqflags.h>
 #include <asm/io.h>
@@ -42,8 +43,6 @@
  * has been running for
  */
 DEFINE_PER_CORE(uint64_t, timer_ticks, 0);
-extern uint32_t cpu_freq;
-extern int32_t boot_processor;
 
 #ifdef DYNAMIC_TICKS
 DEFINE_PER_CORE(uint64_t, last_rdtsc, 0);
@@ -52,7 +51,7 @@ uint64_t boot_tsc = 0;
 void check_ticks(void)
 {
 	// do we already know the cpu frequency? => if not, ignore this check
-	if (!cpu_freq)
+	if (!kernel_arguments.cpu_freq)
 		return;
 
 	const uint64_t curr_rdtsc = has_rdtscp() ? rdtscp(NULL) : rdtsc();
@@ -86,7 +85,7 @@ static void timer_handler(struct state *s)
 	set_per_core(timer_ticks, per_core(timer_ticks)+1);
 #else
 	// do we already know the cpu frequency? => if not, use timer interrupt to count the ticks
-	if (!cpu_freq)
+	if (!kernel_arguments.cpu_freq)
 		set_per_core(timer_ticks, per_core(timer_ticks)+1);
 #endif
 
@@ -194,7 +193,7 @@ int timer_init(void)
 	set_per_core(last_rdtsc, boot_tsc);
 #endif
 
-	if (cpu_freq) // do we need to configure the timer?
+	if (kernel_arguments.cpu_freq) // do we need to configure the timer?
 		return 0;
 
 	return pit_init();

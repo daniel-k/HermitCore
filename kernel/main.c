@@ -37,6 +37,7 @@
 #include <hermit/spinlock.h>
 #include <hermit/rcce.h>
 #include <hermit/logging.h>
+#include <hermit/kernel_arguments.h>
 #include <asm/irq.h>
 #include <asm/page.h>
 #include <asm/uart.h>
@@ -79,19 +80,12 @@ extern const void percore_start;
 extern const void percore_end0;
 extern const void percore_end;
 extern char __BUILD_DATE;
-extern size_t hbmem_base;
-extern size_t hbmem_size;
 
 /* Page frame counters */
 extern atomic_int64_t total_pages;
 extern atomic_int64_t total_allocated_pages;
 extern atomic_int64_t total_available_pages;
 
-extern atomic_int32_t cpu_online;
-extern atomic_int32_t possible_cpus;
-extern int32_t isle;
-extern int32_t possible_isles;
-extern uint32_t boot_processor;
 extern volatile int libc_sd;
 
 islelock_t* rcce_lock = NULL;
@@ -141,7 +135,7 @@ static void print_status(void)
 	static spinlock_t status_lock = SPINLOCK_INIT;
 
 	spinlock_lock(&status_lock);
-	LOG_INFO("CPU %d of isle %d is now online (CR0 0x%zx, CR4 0x%zx)\n", CORE_ID, isle, read_cr0(), read_cr4());
+	LOG_INFO("CPU %d of isle %d is now online (CR0 0x%zx, CR4 0x%zx)\n", CORE_ID, kernel_arguments.isle, read_cr0(), read_cr4());
 	spinlock_unlock(&status_lock);
 }
 
@@ -180,7 +174,7 @@ static int init_netifs(void)
 	{
 		/* Set network address variables */
 		IP_ADDR4(&gw, 192,168,28,1);
-		IP_ADDR4(&ipaddr, 192,168,28,isle+2);
+		IP_ADDR4(&ipaddr, 192,168,28,kernel_arguments.isle + 2);
 		IP_ADDR4(&netmask, 255,255,255,0);
 
 		/* register our Memory Mapped Virtual IP interface in the lwip stack
@@ -289,7 +283,7 @@ int smp_main(void)
 	print_status();
 
 	/* wait for the other cpus */
-	while(atomic_int32_read(&cpu_online) < atomic_int32_read(&possible_cpus))
+	while(atomic_int32_read(&kernel_arguments.cpu_online) < atomic_int32_read(&kernel_arguments.possible_cpus))
 		PAUSE;
 
 	//create_kernel_task(NULL, foo, "foo2", NORMAL_PRIO);
@@ -312,7 +306,7 @@ static int init_rcce(void)
 		return -ENOMEM;
 	if (has_nx())
 		flags |= PG_XD;
-	if (page_map(addr, phy_rcce_internals, 1, flags)) {
+	if (page_map(addr, kernel_arguments.phy_rcce_internals, 1, flags)) {
 		vma_free(addr, addr + PAGE_SIZE);
 		return -ENOMEM;
 	}
@@ -572,7 +566,7 @@ int hermit_main(void)
 	system_calibration(); // enables also interrupts
 
 	LOG_INFO("This is Hermit %s, build date %u\n", PACKAGE_VERSION, &__DATE__);
-	LOG_INFO("Isle %d of %d possible isles\n", isle, possible_isles);
+	LOG_INFO("Isle %d of %d possible isles\n", kernel_arguments.isle, kernel_arguments.possible_isles);
 	LOG_INFO("Kernel starts at %p and ends at %p\n", &kernel_start, &kernel_end);
 	LOG_INFO("TLS image starts at %p and ends at %p (size 0x%zx)\n", &tls_start, &tls_end, ((size_t) &tls_end) - ((size_t) &tls_start));
 	LOG_INFO("BBS starts at %p and ends at %p\n", &hbss_start, &kernel_end);
@@ -582,10 +576,10 @@ int hermit_main(void)
 	LOG_INFO("Total memory: %zd MiB\n", atomic_int64_read(&total_pages) * PAGE_SIZE / (1024ULL*1024ULL));
 	LOG_INFO("Current allocated memory: %zd KiB\n", atomic_int64_read(&total_allocated_pages) * PAGE_SIZE / 1024ULL);
 	LOG_INFO("Current available memory: %zd MiB\n", atomic_int64_read(&total_available_pages) * PAGE_SIZE / (1024ULL*1024ULL));
-	LOG_INFO("Core %d is the boot processor\n", boot_processor);
-	LOG_INFO("System is able to use %d processors\n", possible_cpus);
-	if (hbmem_base)
-		LOG_INFO("Found high bandwidth memory at 0x%zx (size 0x%zx)\n", hbmem_base, hbmem_size);
+	LOG_INFO("Core %d is the boot processor\n", kernel_arguments.boot_processor);
+	LOG_INFO("System is able to use %d processors\n", kernel_arguments.possible_cpus);
+	if (kernel_arguments.hbmem_base)
+		LOG_INFO("Found high bandwidth memory at 0x%zx (size 0x%zx)\n", kernel_arguments.hbmem_base, kernel_arguments.hbmem_size);
 
 #if 0
 	print_pci_adapters();
@@ -596,13 +590,13 @@ int hermit_main(void)
 #endif
 
 	/* wait for the other cpus */
-	while(atomic_int32_read(&cpu_online) < atomic_int32_read(&possible_cpus))
+	while(atomic_int32_read(&kernel_arguments.cpu_online) < atomic_int32_read(&kernel_arguments.possible_cpus))
 		PAUSE;
 
 	print_status();
 	//vma_dump();
 
-	create_kernel_task_on_core(NULL, initd, NULL, NORMAL_PRIO, boot_processor);
+	create_kernel_task_on_core(NULL, initd, NULL, NORMAL_PRIO, kernel_arguments.boot_processor);
 
 	while(1) {
 		check_workqueues();

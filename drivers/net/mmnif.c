@@ -51,6 +51,7 @@
  */
 
 #include <hermit/stddef.h>
+#include <hermit/kernel_arguments.h>
 #include <hermit/logging.h>
 
 #include <lwip/netif.h>		/* lwip netif */
@@ -102,23 +103,7 @@
 #define MMNIF_STATUS_INPROC		0x03
 #define MMNIF_STATUS_PROC		0x04
 
-// id of the HermitCore isle
-extern int32_t isle;
-extern int32_t possible_isles;
-extern char* phy_isle_locks;
-
 static spinlock_irqsave_t locallock;
-
-/* "message passing buffer" specific constants:
- * - start address
- * - size
- */
-extern char* header_start_address;
-extern char* header_phy_start_address;
-extern unsigned int header_size;
-extern char* heap_start_address;
-extern char* heap_phy_start_address;
-extern unsigned int heap_size;
 
 /*
  * the memory mapped network device
@@ -326,8 +311,8 @@ static uint8_t mmnif_get_destination(struct netif *netif, struct pbuf *p)
 static size_t mmnif_rxbuff_alloc(uint8_t dest, uint16_t len)
 {
 	size_t ret = 0;
-	volatile mm_rx_buffer_t *rb = (mm_rx_buffer_t *) ((char *)header_start_address + (dest - 1) * header_size);
-	char *memblock = (char *)heap_start_address + (dest - 1) * heap_size;
+	volatile mm_rx_buffer_t *rb = (mm_rx_buffer_t *) ((char *)kernel_arguments.header_start_address + (dest - 1) * kernel_arguments.header_size);
+	char *memblock = (char *)kernel_arguments.heap_start_address + (dest - 1) * kernel_arguments.heap_size;
 
 //        if (rb->tail > rb->head)
 //             if ((MMNIF_RX_BUFFERLEN - rb->tail < len)&&(rb->head < len))
@@ -397,7 +382,7 @@ static size_t mmnif_rxbuff_alloc(uint8_t dest, uint16_t len)
  */
 static int mmnif_commit_packet(uint8_t dest, uint32_t addr)
 {
-	volatile mm_rx_buffer_t *rb = (mm_rx_buffer_t *) ((char *)header_start_address + (dest - 1) * header_size);
+	volatile mm_rx_buffer_t *rb = (mm_rx_buffer_t *) ((char *)kernel_arguments.header_start_address + (dest - 1) * kernel_arguments.header_size);
 	uint32_t i;
 
 	for (i = 0; i < MMNIF_MAX_DESCRIPTORS; i++)
@@ -426,7 +411,7 @@ static void mmnif_rxbuff_free(void)
 	uint8_t flags;
 
 	flags = irq_nested_disable();
-	islelock_lock(isle_locks + (isle+1));
+	islelock_lock(isle_locks + (kernel_arguments.isle+1));
 	rpos = b->dread;
 
 	for (i = 0, j = rpos; i < MMNIF_MAX_DESCRIPTORS; i++)
@@ -453,7 +438,7 @@ static void mmnif_rxbuff_free(void)
 			break;
 	}
 
-	islelock_unlock(isle_locks + (isle+1));
+	islelock_unlock(isle_locks + (kernel_arguments.isle+1));
 	irq_nested_enable(flags);
 }
 
@@ -550,7 +535,7 @@ err_t mmnif_init(struct netif *netif)
 	mmnif_t *mmnif = NULL;
 	int num = 0;
 	int err;
-	uint32_t nodes = possible_isles + 1;
+	uint32_t nodes = kernel_arguments.possible_isles + 1;
 	size_t flags;
 
 	LOG_INFO("Initialize mmnif\n");
@@ -569,34 +554,34 @@ err_t mmnif_init(struct netif *netif)
 
 	/* Alloc and clear shared memory for rx_buff
 	 */
-	if (BUILTIN_EXPECT(header_size < sizeof(mm_rx_buffer_t), 0))
+	if (BUILTIN_EXPECT(kernel_arguments.header_size < sizeof(mm_rx_buffer_t), 0))
 	{
 		LOG_ERROR("mmnif init(): header_size is too small\n");
 		goto out;
 	}
 
-	if (BUILTIN_EXPECT(heap_size < MMNIF_RX_BUFFERLEN, 0))
+	if (BUILTIN_EXPECT(kernel_arguments.heap_size < MMNIF_RX_BUFFERLEN, 0))
 	{
 		LOG_ERROR("mmnif init(): heap_size is too small\n");
 		goto out;
 	}
 	LOG_INFO("mmnif_init() : size of mm_rx_buffer_t : %d\n", sizeof(mm_rx_buffer_t));
 
-	if (BUILTIN_EXPECT(!header_phy_start_address || !header_phy_start_address || !phy_isle_locks, 0))
+	if (BUILTIN_EXPECT(!kernel_arguments.header_phy_start_address || !kernel_arguments.header_phy_start_address || !kernel_arguments.phy_isle_locks, 0))
 	{
 		LOG_ERROR("mmnif init(): invalid heap or header address\n");
 		goto out;
 	}
 
-	if (BUILTIN_EXPECT(!header_start_address, 0))
+	if (BUILTIN_EXPECT(!kernel_arguments.header_start_address, 0))
 	{
 		LOG_ERROR("mmnif init(): vma_alloc failed\n");
 		goto out;
 	}
 
-	err = vma_add((size_t)header_start_address, PAGE_FLOOR((size_t)header_start_address + ((nodes * header_size) >> PAGE_BITS)), VMA_READ|VMA_WRITE|VMA_CACHEABLE);
+	err = vma_add((size_t)kernel_arguments.header_start_address, PAGE_FLOOR((size_t)kernel_arguments.header_start_address + ((nodes * kernel_arguments.header_size) >> PAGE_BITS)), VMA_READ|VMA_WRITE|VMA_CACHEABLE);
 	if (BUILTIN_EXPECT(err, 0)) {
-		LOG_ERROR("mmnif init(): vma_add failed for header_start_address %p\n", header_start_address);
+		LOG_ERROR("mmnif init(): vma_add failed for header_start_address %p\n", kernel_arguments.header_start_address);
 		goto out;
 	}
 
@@ -606,40 +591,40 @@ err_t mmnif_init(struct netif *netif)
 		flags |= PG_XD;
 
 	// map physical address in the virtual address space
-	err = page_map((size_t) header_start_address, (size_t) header_phy_start_address, (nodes * header_size) >> PAGE_BITS, flags);
+	err = page_map((size_t) kernel_arguments.header_start_address, (size_t) kernel_arguments.header_phy_start_address, (nodes * kernel_arguments.header_size) >> PAGE_BITS, flags);
 	if (BUILTIN_EXPECT(err, 0)) {
 		LOG_ERROR("mmnif init(): page_map failed\n");
 		goto out;
 	}
 
-	LOG_INFO("map header %p at %p\n", header_phy_start_address, header_start_address);
-	mmnif->rx_buff = (mm_rx_buffer_t *) (header_start_address + header_size * (isle+1));
+	LOG_INFO("map header %p at %p\n", kernel_arguments.header_phy_start_address, kernel_arguments.header_start_address);
+	mmnif->rx_buff = (mm_rx_buffer_t *) (kernel_arguments.header_start_address + kernel_arguments.header_size * (kernel_arguments.isle+1));
 
-	if (BUILTIN_EXPECT(!heap_start_address, 0)) {
+	if (BUILTIN_EXPECT(!kernel_arguments.heap_start_address, 0)) {
 		LOG_ERROR("mmnif init(): vma_alloc failed\n");
 		goto out;
 	}
 
-	err = vma_add((size_t)heap_start_address, PAGE_FLOOR((size_t)heap_start_address + ((nodes * heap_size) >> PAGE_BITS)), VMA_READ|VMA_WRITE|VMA_CACHEABLE);
-	if (BUILTIN_EXPECT(!heap_start_address, 0))
+	err = vma_add((size_t)kernel_arguments.heap_start_address, PAGE_FLOOR((size_t)kernel_arguments.heap_start_address + ((nodes * kernel_arguments.heap_size) >> PAGE_BITS)), VMA_READ|VMA_WRITE|VMA_CACHEABLE);
+	if (BUILTIN_EXPECT(!kernel_arguments.heap_start_address, 0))
 	{
-		LOG_ERROR("mmnif init(): vma_add failed for heap_start_address %p\n", heap_start_address);
+		LOG_ERROR("mmnif init(): vma_add failed for heap_start_address %p\n", kernel_arguments.heap_start_address);
 		goto out;
 	}
 
 	// map physical address in the virtual address space
-	err = page_map((size_t) heap_start_address, (size_t) heap_phy_start_address, (nodes * heap_size) >> PAGE_BITS, flags);
+	err = page_map((size_t) kernel_arguments.heap_start_address, (size_t) kernel_arguments.heap_phy_start_address, (nodes * kernel_arguments.heap_size) >> PAGE_BITS, flags);
 	if (BUILTIN_EXPECT(err, 0)) {
 		LOG_ERROR("mmnif init(): page_map failed\n");
 		goto out;
 	}
 
 	// map physical address in the virtual address space
-	LOG_INFO("map heap %p at %p\n", heap_phy_start_address, heap_start_address);
-	mmnif->rx_heap = (uint8_t*) heap_start_address + heap_size * (isle+1);
+	LOG_INFO("map heap %p at %p\n", kernel_arguments.heap_phy_start_address, kernel_arguments.heap_start_address);
+	mmnif->rx_heap = (uint8_t*) kernel_arguments.heap_start_address + kernel_arguments.heap_size * (kernel_arguments.isle+1);
 
-	memset((void*)mmnif->rx_buff, 0x00, header_size);
-	memset((void*)mmnif->rx_heap, 0x00, heap_size);
+	memset((void*)mmnif->rx_buff, 0x00, kernel_arguments.header_size);
+	memset((void*)mmnif->rx_heap, 0x00, kernel_arguments.heap_size);
 
 	isle_locks = (islelock_t*) vma_alloc(((nodes + 1) * sizeof(islelock_t) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1), VMA_READ|VMA_WRITE|VMA_CACHEABLE);
 	if (BUILTIN_EXPECT(!isle_locks, 0)) {
@@ -648,12 +633,12 @@ err_t mmnif_init(struct netif *netif)
 	}
 
 	// map physical address in the virtual address space
-	err = page_map((size_t) isle_locks, (size_t) phy_isle_locks, (((nodes+1) * sizeof(islelock_t) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) >> PAGE_BITS, flags);
+	err = page_map((size_t) isle_locks, (size_t) kernel_arguments.phy_isle_locks, (((nodes+1) * sizeof(islelock_t) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) >> PAGE_BITS, flags);
 	if (BUILTIN_EXPECT(err, 0)) {
 		LOG_ERROR("mmnif init(): page_map failed\n");
 		goto out;
 	}
-	LOG_INFO("map isle_locks %p at %p\n", phy_isle_locks, isle_locks);
+	LOG_INFO("map isle_locks %p at %p\n", kernel_arguments.phy_isle_locks, isle_locks);
 
 	/* set initial values
 	 */
@@ -705,8 +690,8 @@ out:
 	if (!mmnif)
 		kfree(mmnif);
 
-	header_start_address = NULL;
-	heap_start_address = NULL;
+	kernel_arguments.header_start_address = (size_t) NULL;
+	kernel_arguments.heap_start_address = (size_t) NULL;
 
 	return ERR_MEM;
 }

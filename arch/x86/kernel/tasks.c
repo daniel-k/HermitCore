@@ -50,8 +50,6 @@ extern const void tls_end;
 extern const void percore_start;
 extern const void percore_end0;
 
-extern uint64_t base;
-
 static int init_tls(void)
 {
 	task_t* curr_task = per_core(current_task);

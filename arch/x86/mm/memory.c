@@ -32,13 +32,11 @@
 #include <hermit/spinlock.h>
 #include <hermit/memory.h>
 #include <hermit/logging.h>
+#include <hermit/kernel_arguments.h>
 
 #include <asm/atomic.h>
 #include <asm/page.h>
 #include <asm/multiboot.h>
-
-extern uint64_t base;
-extern uint64_t limit;
 
 typedef struct free_list {
 	size_t start, end;
@@ -255,14 +253,14 @@ int memory_init(void)
 		return ret;
 	}
 
-	LOG_INFO("mb_info: 0x%zx\n", mb_info);
-	LOG_INFO("memory_init: base 0x%zx, image_size 0x%zx, limit 0x%zx\n", base, image_size, limit);
+	LOG_INFO("kernel_arguments.mb_info: 0x%zx\n", kernel_arguments.mb_info);
+	LOG_INFO("memory_init: base 0x%zx, image_size 0x%zx, limit 0x%zx\n", kernel_arguments.base, image_size, kernel_arguments.limit);
 
-	if (mb_info) {
-		if (mb_info->flags & MULTIBOOT_INFO_MEM_MAP) {
+	if (kernel_arguments.mb_info) {
+		if (kernel_arguments.mb_info->flags & MULTIBOOT_INFO_MEM_MAP) {
 			size_t end_addr, start_addr;
-			multiboot_memory_map_t* mmap = (multiboot_memory_map_t*) ((size_t) mb_info->mmap_addr);
-			multiboot_memory_map_t* mmap_end = (void*) ((size_t) mb_info->mmap_addr + mb_info->mmap_length);
+			multiboot_memory_map_t* mmap = (multiboot_memory_map_t*) ((size_t) kernel_arguments.mb_info->mmap_addr);
+			multiboot_memory_map_t* mmap_end = (void*) ((size_t) kernel_arguments.mb_info->mmap_addr + kernel_arguments.mb_info->mmap_length);
 
 			// mark first available memory slot as free
 			for(; mmap < mmap_end; mmap = (multiboot_memory_map_t*) ((size_t) mmap + sizeof(uint32_t) + mmap->size)) {
@@ -272,7 +270,7 @@ int memory_init(void)
 
 					LOG_INFO("Free region 0x%zx - 0x%zx\n", start_addr, end_addr);
 
-					if ((start_addr <= base) && (end_addr >= PAGE_2M_FLOOR((size_t) &kernel_end))) {
+					if ((start_addr <= kernel_arguments.base) && (end_addr >= PAGE_2M_FLOOR((size_t) &kernel_end))) {
 						init_list.start = PAGE_2M_FLOOR((size_t) &kernel_end);
 						init_list.end = end_addr;
 
@@ -292,12 +290,12 @@ int memory_init(void)
 		}
 	} else {
 		// determine available memory
-		atomic_int64_add(&total_pages, (limit-base) >> PAGE_BITS);
-		atomic_int64_add(&total_available_pages, (limit-base) >> PAGE_BITS);
+		atomic_int64_add(&total_pages, (kernel_arguments.limit - kernel_arguments.base) >> PAGE_BITS);
+		atomic_int64_add(&total_available_pages, (kernel_arguments.limit - kernel_arguments.base) >> PAGE_BITS);
 
 		//initialize free list
 		init_list.start = PAGE_2M_FLOOR((size_t) &kernel_end);
-		init_list.end = limit;
+		init_list.end = kernel_arguments.limit;
 	}
 
 	// determine allocated memory, we use 2MB pages to map the kernel
@@ -314,12 +312,12 @@ int memory_init(void)
 		LOG_WARNING("Failed to initialize VMA regions: %d\n", ret);
 
 	// add missing free regions
-	if (mb_info) {
-		if (mb_info->flags & MULTIBOOT_INFO_MEM_MAP) {
+	if (kernel_arguments.mb_info) {
+		if (kernel_arguments.mb_info->flags & MULTIBOOT_INFO_MEM_MAP) {
 			free_list_t* last = &init_list;
 			size_t end_addr, start_addr;
-			multiboot_memory_map_t* mmap = (multiboot_memory_map_t*) ((size_t) mb_info->mmap_addr);
-			multiboot_memory_map_t* mmap_end = (void*) ((size_t) mb_info->mmap_addr + mb_info->mmap_length);
+			multiboot_memory_map_t* mmap = (multiboot_memory_map_t*) ((size_t) kernel_arguments.mb_info->mmap_addr);
+			multiboot_memory_map_t* mmap_end = (void*) ((size_t) kernel_arguments.mb_info->mmap_addr + kernel_arguments.mb_info->mmap_length);
 
 			// mark available memory as free
 			for(; mmap < mmap_end; mmap = (multiboot_memory_map_t*) ((size_t) mmap + sizeof(uint32_t) + mmap->size))
@@ -328,8 +326,10 @@ int memory_init(void)
 					start_addr = PAGE_FLOOR(mmap->addr);
 					end_addr = PAGE_CEIL(mmap->addr + mmap->len);
 
-					if ((start_addr <= base) && (end_addr >= PAGE_2M_FLOOR(base+image_size)))
-						end_addr = base;
+					if ((start_addr <= kernel_arguments.base) &&
+					    (end_addr >= PAGE_2M_FLOOR(kernel_arguments.base + image_size))) {
+						end_addr = kernel_arguments.base;
+					}
 
 					// ignore everything below 1M => reserve for I/O devices
 					if ((start_addr < (size_t) 0x100000))
@@ -352,7 +352,7 @@ int memory_init(void)
 				}
 			}
 
-			//TODO: mb_info and mb_info->cmdline should be marked as reserevd
+			//TODO: kernel_arguments.mb_info and kernel_arguments.mb_info->cmdline should be marked as reserevd
 		}
 	}
 

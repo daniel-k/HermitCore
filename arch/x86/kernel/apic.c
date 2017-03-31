@@ -42,6 +42,7 @@
 #include <asm/io.h>
 #include <asm/page.h>
 #include <asm/apic.h>
+#include <hermit/kernel_arguments.h>
 #include <hermit/boot.h>
 
 /*
@@ -63,13 +64,6 @@ typedef struct {
 } ioapic_t;
 
 static const apic_processor_entry_t* apic_processors[MAX_APIC_CORES] = {[0 ... MAX_APIC_CORES-1] = NULL};
-extern int32_t boot_processor;
-extern uint32_t cpu_freq;
-extern atomic_int32_t cpu_online;
-extern int32_t isle;
-extern int32_t possible_isles;
-extern int32_t possible_cpus;
-extern atomic_int32_t current_boot_id;
 apic_mp_t* apic_mp  __attribute__ ((section (".data"))) = NULL;
 static apic_config_table_t* apic_config = NULL;
 static size_t lapic = 0;
@@ -277,8 +271,8 @@ uint32_t apic_cpu_id(void)
 		return id;
 	else if (id >= 0)
 		return (id >> 24);
-	else if (boot_processor >= 0)
-		return boot_processor;
+	else if (kernel_arguments.boot_processor >= 0)
+		return kernel_arguments.boot_processor;
 	else
 		return 0;
 }
@@ -596,22 +590,22 @@ int smp_init(void)
 
 	for(i=1; (i<ncores) && (i<MAX_CORES); i++)
 	{
-		atomic_int32_set(&current_boot_id, i);
+		atomic_int32_set(&kernel_arguments.current_boot_id, i);
 
 		err = wakeup_ap(SMP_SETUP_ADDR, i);
 		if (err)
 			LOG_WARNING("Unable to wakeup application processor %d: %d\n", i, err);
 
-		for(j=0; (i >= atomic_int32_read(&cpu_online)) && (j < 1000); j++)
+		for(j=0; (i >= atomic_int32_read(&kernel_arguments.cpu_online)) && (j < 1000); j++)
 			udelay(1000);
 
-		if (i >= atomic_int32_read(&cpu_online)) {
-			LOG_ERROR("Unable to wakeup processor %d, cpu_online %d\n", i, atomic_int32_read(&cpu_online));
+		if (i >= atomic_int32_read(&kernel_arguments.cpu_online)) {
+			LOG_ERROR("Unable to wakeup processor %d, cpu_online %d\n", i, atomic_int32_read(&kernel_arguments.cpu_online));
 			return -EIO;
 		}
 	}
 
-	LOG_INFO("%d cores online\n", atomic_int32_read(&cpu_online));
+	LOG_INFO("%d cores online\n", atomic_int32_read(&kernel_arguments.cpu_online));
 
 	return 0;
 }
@@ -664,7 +658,7 @@ int apic_calibration(void)
 	LOG_INFO("APIC calibration determined an ICR of 0x%x\n", icr);
 
 	apic_initialized = 1;
-	atomic_int32_inc(&cpu_online);
+	atomic_int32_inc(&kernel_arguments.cpu_online);
 
 	if(is_single_kernel()) {
 		// Now, HermitCore is able to use the APIC => Therefore, we disable the PIC
@@ -679,11 +673,11 @@ int apic_calibration(void)
 		// now lets turn everything else on
 		for(uint8_t i = 0; i <= max_entry; i++) {
 			if (i != 2)
-				ioapic_inton(i, apic_processors[boot_processor]->id);
+				ioapic_inton(i, apic_processors[kernel_arguments.boot_processor]->id);
 		}
 
 		// now, we don't longer need the IOAPIC timer and turn it off
-		ioapic_intoff(2, apic_processors[boot_processor]->id);
+		ioapic_intoff(2, apic_processors[kernel_arguments.boot_processor]->id);
 	}
 
 #if MAX_CORES > 1
@@ -725,9 +719,9 @@ found_mp:
 		goto no_mp;
 	}
 
-	if (isle < 0) {
+	if (kernel_arguments.isle < 0) {
 		//TODO: add detection of NUMA node
-		isle = 0;
+		kernel_arguments.isle = 0;
 	}
 
 	LOG_INFO("Found MP config table at 0x%x\n", apic_mp->mp_config);
@@ -795,7 +789,7 @@ found_mp:
 
 			if (j < MAX_APIC_CORES) {
 				if (is_single_kernel() && (cpu->cpu_flags & 0x02))
-					boot_processor = j;
+					kernel_arguments.boot_processor = j;
 				if (cpu->cpu_flags & 0x01) { // is the processor usable?
 					apic_processors[j] = cpu;
 					j++;
@@ -835,7 +829,7 @@ found_mp:
 	}
 	ncores = count;
 	if (is_single_kernel())
-		possible_cpus = count;
+		atomic_int32_set(&kernel_arguments.possible_cpus, count);
 
 check_lapic:
 	if (apic_config)
@@ -885,10 +879,10 @@ out:
 	return -ENXIO;
 
 no_mp:
-	if (isle < 0)
-		isle = 0;
-	if (boot_processor < 0)
-		boot_processor = 0;
+	if (kernel_arguments.isle < 0)
+		kernel_arguments.isle = 0;
+	if (kernel_arguments.boot_processor < 0)
+		kernel_arguments.boot_processor = 0;
 	apic_mp = NULL;
 	apic_config = NULL;
 	if (!is_uhyve())
@@ -908,7 +902,7 @@ int smp_start(void)
 	// reset APIC and set id
 	lapic_reset();
 
-	LOG_INFO("Processor %d (local id %d) is entering its idle task\n", apic_cpu_id(), atomic_int32_read(&current_boot_id));
+	LOG_INFO("Processor %d (local id %d) is entering its idle task\n", apic_cpu_id(), atomic_int32_read(&kernel_arguments.current_boot_id));
 
 	// use the same gdt like the boot processors
 	gdt_flush();
@@ -925,8 +919,8 @@ int smp_start(void)
 	// enable additional cpu features
 	cpu_detection();
 
-	LOG_DEBUG("CR0 of core %u: 0x%x\n", atomic_int32_read(&current_boot_id), read_cr0());
-	online[atomic_int32_read(&current_boot_id)] = 1;
+	LOG_DEBUG("CR0 of core %u: 0x%x\n", atomic_int32_read(&kernel_arguments.current_boot_id), read_cr0());
+	online[atomic_int32_read(&kernel_arguments.current_boot_id)] = 1;
 
 	// set task switched flag for the first FPU access
 	// => initialize the FPU
@@ -938,7 +932,7 @@ int smp_start(void)
 
 	irq_enable();
 
-	atomic_int32_inc(&cpu_online);
+	atomic_int32_inc(&kernel_arguments.cpu_online);
 
 	return smp_main();
 }
@@ -947,7 +941,7 @@ int ipi_tlb_flush(void)
 {
 	uint32_t id = CORE_ID;
 
-	if (atomic_int32_read(&cpu_online) <= 1)
+	if (atomic_int32_read(&kernel_arguments.cpu_online) <= 1)
 		return 0;
 
 	if (has_x2apic()) {
@@ -1038,7 +1032,7 @@ static void apic_err_handler(struct state *s)
 
 void shutdown_system(void)
 {
-	int if_bootprocessor = (boot_processor == apic_cpu_id());
+	int if_bootprocessor = (kernel_arguments.boot_processor == apic_cpu_id());
 
 	irq_disable();
 
@@ -1048,7 +1042,7 @@ void shutdown_system(void)
 		//vma_dump();
 		dump_pstate();
 
-		while(atomic_int32_read(&cpu_online) != 1)
+		while(atomic_int32_read(&kernel_arguments.cpu_online) != 1)
 			PAUSE;
 
 		network_shutdown();
@@ -1075,7 +1069,7 @@ void shutdown_system(void)
 	}
 
 	flush_cache();
-	atomic_int32_dec(&cpu_online);
+	atomic_int32_dec(&kernel_arguments.cpu_online);
 
 	while(1) {
 		HALT;
@@ -1110,11 +1104,11 @@ int apic_init(void)
 #endif
 	irq_install_handler(81+32, apic_shutdown);
 	irq_install_handler(124, apic_lint0);
-	if (apic_processors[boot_processor])
-		LOG_INFO("Boot processor %u (ID %u)\n", boot_processor, apic_processors[boot_processor]->id);
+	if (apic_processors[kernel_arguments.boot_processor])
+		LOG_INFO("Boot processor %u (ID %u)\n", kernel_arguments.boot_processor, apic_processors[kernel_arguments.boot_processor]->id);
 	else
-		LOG_INFO("Boot processor %u\n", boot_processor);
-	online[boot_processor] = 1;
+		LOG_INFO("Boot processor %u\n", kernel_arguments.boot_processor);
+	online[kernel_arguments.boot_processor] = 1;
 
 	return 0;
 }

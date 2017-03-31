@@ -41,6 +41,7 @@
 #include <hermit/spinlock.h>
 #include <hermit/tasks.h>
 #include <hermit/logging.h>
+#include <hermit/kernel_arguments.h>
 
 #include <asm/multiboot.h>
 #include <asm/irq.h>
@@ -326,10 +327,10 @@ int page_init(void)
 		LOG_INFO("Detect Go runtime! Consequently, HermitCore zeroed heap.\n");
 	}
 
-	if (mb_info && ((mb_info->cmdline & PAGE_MASK) != ((size_t) mb_info & PAGE_MASK))) {
-		LOG_INFO("Map multiboot cmdline 0x%x into the virtual address space\n", mb_info->cmdline);
+	if (kernel_arguments.mb_info && ((kernel_arguments.mb_info->cmdline & PAGE_MASK) != ((size_t) kernel_arguments.mb_info & PAGE_MASK))) {
+		LOG_INFO("Map multiboot cmdline 0x%x into the virtual address space\n", kernel_arguments.mb_info->cmdline);
 		// reserve 2 pages for long cmdline strings
-		page_map((size_t) mb_info->cmdline & PAGE_MASK, mb_info->cmdline & PAGE_MASK, 2, PG_GLOBAL|PG_RW|PG_PRESENT);
+		page_map((size_t) kernel_arguments.mb_info->cmdline & PAGE_MASK, kernel_arguments.mb_info->cmdline & PAGE_MASK, 2, PG_GLOBAL|PG_RW|PG_PRESENT);
 	}
 
 	/* Replace default pagefault handler */

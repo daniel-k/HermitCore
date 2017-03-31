@@ -37,6 +37,7 @@
 #include <hermit/memory.h>
 #include <hermit/signal.h>
 #include <hermit/logging.h>
+#include <hermit/kernel_arguments.h>
 #include <asm/uhyve.h>
 #include <sys/poll.h>
 
@@ -55,8 +56,6 @@ extern const void kernel_end;
 static spinlock_irqsave_t lwip_lock = SPINLOCK_IRQSAVE_INIT;
 
 extern spinlock_irqsave_t stdio_lock;
-extern int32_t isle;
-extern int32_t possible_isles;
 extern volatile int libc_sd;
 
 tid_t sys_getpid(void)
@@ -594,7 +593,7 @@ int sys_rcce_init(int session_id)
 		goto out;
 	}
 
-	rcce_mpb[i].mpb[isle] = paddr;
+	rcce_mpb[i].mpb[kernel_arguments.isle] = paddr;
 
 out:
 	islelock_unlock(rcce_lock);
@@ -646,7 +645,7 @@ size_t sys_rcce_malloc(int session_id, int ue)
 
 	LOG_INFO("Map MPB of session %d at 0x%zx, using of slot %d, isle %d\n", session_id, vaddr, i, ue);
 
-	if (isle == ue)
+	if (kernel_arguments.isle == ue)
 		memset((void*)vaddr, 0x0, RCCE_MPB_SIZE);
 
 	return vaddr;
@@ -683,13 +682,13 @@ int sys_rcce_fini(int session_id)
 		goto out;
 	}
 
-	if (rcce_mpb[i].mpb[isle]) {
+	if (rcce_mpb[i].mpb[kernel_arguments.isle]) {
 		if (is_hbmem_available())
-			hbmem_put_pages(rcce_mpb[i].mpb[isle], RCCE_MPB_SIZE / PAGE_SIZE);
+			hbmem_put_pages(rcce_mpb[i].mpb[kernel_arguments.isle], RCCE_MPB_SIZE / PAGE_SIZE);
 		else
-			put_pages(rcce_mpb[i].mpb[isle], RCCE_MPB_SIZE / PAGE_SIZE);
+			put_pages(rcce_mpb[i].mpb[kernel_arguments.isle], RCCE_MPB_SIZE / PAGE_SIZE);
 	}
-	rcce_mpb[i].mpb[isle] = 0;
+	rcce_mpb[i].mpb[kernel_arguments.isle] = 0;
 
 	for(j=0; (j<MAX_ISLE) && !rcce_mpb[i].mpb[j]; j++) {
 		PAUSE;

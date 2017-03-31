@@ -26,20 +26,21 @@
  */
 
 #include <hermit/vma.h>
+#include <hermit/kernel_arguments.h>
 #include <asm/multiboot.h>
 
 int vma_arch_init(void)
 {
 	int ret = 0;
 
-	if (mb_info) {
-		ret = vma_add((size_t)mb_info & PAGE_MASK, ((size_t)mb_info & PAGE_MASK) + PAGE_SIZE, VMA_READ|VMA_WRITE);
+	if (kernel_arguments.mb_info) {
+		ret = vma_add((size_t)kernel_arguments.mb_info & PAGE_MASK, ((size_t)kernel_arguments.mb_info & PAGE_MASK) + PAGE_SIZE, VMA_READ|VMA_WRITE);
 		if (BUILTIN_EXPECT(ret, 0))
 			goto out;
 
-		if ((mb_info->cmdline & PAGE_MASK) != ((size_t) mb_info & PAGE_MASK)) {
+		if ((kernel_arguments.mb_info->cmdline & PAGE_MASK) != ((size_t) kernel_arguments.mb_info & PAGE_MASK)) {
 			// reserve 2 pages for long cmdline strings
-			ret = vma_add((size_t)mb_info->cmdline & PAGE_MASK, ((size_t)mb_info->cmdline & PAGE_MASK) + 2*PAGE_SIZE, VMA_READ|VMA_WRITE);
+			ret = vma_add((size_t)kernel_arguments.mb_info->cmdline & PAGE_MASK, ((size_t)kernel_arguments.mb_info->cmdline & PAGE_MASK) + 2*PAGE_SIZE, VMA_READ|VMA_WRITE);
 			if (BUILTIN_EXPECT(ret, 0))
 				goto out;
 		}

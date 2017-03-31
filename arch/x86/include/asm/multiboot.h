@@ -141,8 +141,4 @@ struct multiboot_mod_list
 };
 typedef struct multiboot_mod_list multiboot_module_t;
 
-/// Pointer to multiboot structure
-/// This pointer is declared at set by entry.asm
-extern multiboot_info_t* mb_info;
-
 #endif

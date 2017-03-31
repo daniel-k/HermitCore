@@ -53,6 +53,5 @@ typedef struct rcce_mpb {
 
 extern islelock_t* rcce_lock;
 extern rcce_mpb_t* rcce_mpb;
-extern uint64_t phy_rcce_internals;
 
 #endif

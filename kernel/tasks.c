@@ -43,7 +43,6 @@
  * Note that linker symbols are not variables, they have no memory allocated for
  * maintaining a value, rather their address is their value.
  */
-extern atomic_int32_t cpu_online;
 
 volatile uint32_t go_down = 0;
 
