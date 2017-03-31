@@ -56,12 +56,12 @@ generic_export_regex = re.compile('[u]*int[0-9]+_t')
 def get_generic_type(type):
 	size = type_translation[type][1]
 
-	unsigned = ''
+	unsigned = 'u'
 	if generic_export_regex.match(type):
-		if type[0] == 'u':
-			unsigned = 'u'
+		if not type[0] == unsigned:
+			unsigned = ''
 
-	return unsigned + "int" + str(size * 4) + "_t"
+	return unsigned + "int" + str(size * 8) + "_t"
 
 
 def parse_line(line, number):
@@ -143,6 +143,7 @@ def export_c_header(arguments, filename):
 		f.write('#include <asm/atomic32.h>\n')
 		f.write('#include <asm/multiboot.h>\n')
 		f.write('#else // generic export\n')
+		f.write('#include <stdint.h>\n')
 		f.write('#include <unistd.h>\n')
 		f.write('#endif // __hermit__\n')
 		f.write('\n')
@@ -163,6 +164,8 @@ def export_c_header(arguments, filename):
 		f.write('\n')
 		f.write('#ifdef __hermit__\n')
 		f.write('extern hermit_kernel_arguments_t kernel_arguments;\n')
+		f.write('#else // generic export\n')
+		f.write('static const size_t kernel_arguments_offset = 0x08;\n')
 		f.write('#endif // __hermit__\n')
 		f.write('\n')
 		f.write('#endif // ARCH_X86_INCLUDE_ASM_KERNEL_ARGUMENTS\n')
