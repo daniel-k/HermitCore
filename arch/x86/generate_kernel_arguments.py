@@ -18,6 +18,14 @@ type_translation = {
 def parse_line(line, number):
 	global type_translation
 
+    # ignore empty lines
+	if not line:
+		return
+
+    # ignore comments
+	if line.startswith('//'):
+		return
+
 	try:
 		# parse into variables
 		splitted = line.split()
@@ -25,10 +33,8 @@ def parse_line(line, number):
 		c_name = 	splitted[1]
 		c_value = 	splitted[3]
 	except:
-		# ignore this line
-		if not line.startswith('//'):
-			print('Line {}: badly formatted'.format(number))
-			sys.exit(1)
+		print('Line {}: badly formatted'.format(number))
+		sys.exit(1)
 
 	# remove ; from value if present
 	if c_value[-1] == ';':
@@ -71,7 +77,7 @@ def export_c_header(arguments, filename):
 		f.write('#include <asm/atomic32.h>\n')
 		f.write('#include <asm/multiboot.h>\n')
 		f.write('\n')
-		f.write('typedef struct hermit_kernel_arguments {\n')
+		f.write('typedef struct __attribute__(( packed )) hermit_kernel_arguments {\n')
 
 		# align name column by equalizing type width
 		type_lengths = [len(arg['type']) for arg in arguments]
@@ -165,7 +171,9 @@ if __name__ == '__main__':
 
 		# parse input file
 		for line_number, line in enumerate(f.readlines()):
-			arguments.append(parse_line(line.strip(), line_number + 1))
+			arg = parse_line(line.strip(), line_number + 1)
+			if arg:
+				arguments.append(arg)
 
 		# export to C header and NASM definitions
 		export_asm_def(arguments, output_asm)
