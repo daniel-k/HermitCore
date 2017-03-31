@@ -12,8 +12,9 @@ add_library(arch_x86_loader_asm	STATIC ${ASM_SOURCES})
 file(GLOB C_SOURCES *.c)
 add_executable(arch_x86_loader ${C_SOURCES})
 
-target_include_directories(arch_x86_loader
-	PRIVATE include/)
+target_include_directories(arch_x86_loader PRIVATE
+	include
+	${GENERATED_INCLUDES_DIR})
 
 target_compile_options(arch_x86_loader
 	PRIVATE -O2 -Wall -m64 -std=gnu99 -ffreestanding -mno-red-zone

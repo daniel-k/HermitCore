@@ -29,6 +29,7 @@
 #define __ARCH_MULTIBOOT_H__
 
 #include <stddef.h>
+#include <stdint.h>
 
 /// Does the bootloader provide mem_* fields?
 #define MULTIBOOT_INFO_MEM		(1 << 0)

@@ -57,6 +57,8 @@
 #include <linux/kvm.h>
 #include <asm/msr-index.h>
 
+#include <hermit/kernel_arguments.h>
+
 #include "uhyve-cpu.h"
 #include "uhyve-syscalls.h"
 #include "proxy.h"
@@ -306,27 +308,31 @@ static int load_kernel(uint8_t* mem, char* path)
 
 		//printf("Kernel location 0x%zx, file size 0x%zx\n", paddr, filesz);
 
-		ret = pread_in_full(fd, mem+paddr-GUEST_OFFSET, filesz, offset);
+		uint8_t* hermit_base = mem + paddr - GUEST_OFFSET;
+
+		ret = pread_in_full(fd, hermit_base, filesz, offset);
 		if (ret < 0)
 			goto out;
-		memset(mem+paddr+filesz-GUEST_OFFSET, 0x00, memsz - filesz);
+		memset(hermit_base + filesz, 0x00, memsz - filesz);
 		if (!klog)
-			klog = mem+paddr+0x5000-GUEST_OFFSET;
+			klog = hermit_base + 0x5000;
 		if (!mboot)
-			mboot = mem+paddr-GUEST_OFFSET;
+			mboot = hermit_base;
 
 		if (first_load) {
 			first_load = 0;
 
+			hermit_kernel_arguments_t* kernel_arguments = hermit_base + kernel_arguments_offset;
+
 			// initialize kernel
-			*((uint64_t*) (mem+paddr-GUEST_OFFSET + 0x08)) = paddr; // physical start address
-			*((uint64_t*) (mem+paddr-GUEST_OFFSET + 0x10)) = guest_size;   // physical limit
-			*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x18)) = get_cpufreq();
-			*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x24)) = 1; // number of used cpus
-			*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x30)) = 0; // apicid
-			*((uint64_t*) (mem+paddr-GUEST_OFFSET + 0x38)) = filesz;
-			*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x60)) = 1; // numa nodes
-			*((uint32_t*) (mem+paddr-GUEST_OFFSET + 0x94)) = 1; // announce uhyve
+			kernel_arguments->base = paddr;
+			kernel_arguments->limit = guest_size;
+			kernel_arguments->cpu_freq = get_cpufreq();
+			kernel_arguments->possible_cpus = 1;
+			kernel_arguments->current_boot_id = 0;
+			kernel_arguments->image_size = filesz;
+			kernel_arguments->possible_isles = 1;
+			kernel_arguments->uhyve = 1;
 		}
 	}
 

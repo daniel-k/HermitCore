@@ -45,6 +45,8 @@
  */
 
 #include <string.h>
+#include <unistd.h>
+#include <hermit.h>
 
 #define __64BIT__
 

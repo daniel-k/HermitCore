@@ -108,10 +108,6 @@ install(DIRECTORY include/hermit
 # Build projects externally and deploy into temporary common prefix, will later
 # be relocated for installation
 
-## HermitCore's own tools such as Qemu/KVM proxy
-build_external(tools ${HERMIT_ROOT}/tools "")
-build_external(arch_x86_loader ${HERMIT_ROOT}/arch/x86/loader "")
-
 ## Intel's OpenMP runtime for x86 (libomp)
 build_external(libiomp ${HERMIT_ROOT}/usr/libomp ""
 		-DHERMIT=1
@@ -129,6 +125,14 @@ add_dependencies(hermit ircce)
 ## XRay profiler
 build_external(xray ${HERMIT_ROOT}/usr/xray "")
 add_dependencies(hermit xray)
+
+## HermitCore's own tools such as Qemu/KVM proxy
+build_external(arch_x86_loader ${HERMIT_ROOT}/arch/x86/loader hermit
+	-DGENERATED_INCLUDES_DIR=${GENERATED_CONFIG_DIR})
+
+build_external(tools ${HERMIT_ROOT}/tools hermit
+	-DGENERATED_INCLUDES_DIR=${GENERATED_CONFIG_DIR})
+
 
 ## Tests and benchmarks
 build_external(tests ${HERMIT_ROOT}/usr/tests hermit)

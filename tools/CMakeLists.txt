@@ -7,6 +7,8 @@ add_compile_options(-std=c99)
 
 add_executable(proxy proxy.c uhyve.c)
 target_link_libraries(proxy -pthread)
+target_include_directories(proxy PRIVATE
+	${GENERATED_INCLUDES_DIR})
 
 install(TARGETS proxy
 	DESTINATION bin)

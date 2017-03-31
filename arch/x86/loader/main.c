@@ -31,6 +31,9 @@
 #include <multiboot.h>
 #include <elf.h>
 #include <page.h>
+#include <hermit.h>
+#include <hermit/kernel_arguments.h>
+
 
 #define HALT	asm volatile ("hlt")
 
@@ -59,12 +62,16 @@ static int load_code(size_t viraddr, size_t phyaddr, size_t limit, uint32_t file
 		return -1;
 
 	phyaddr += displacement;
-	*((uint64_t*) (viraddr + 0x08)) = phyaddr; // physical start address
-	*((uint64_t*) (viraddr + 0x10)) = limit;   // physical limit
-	*((uint32_t*) (viraddr + 0x24)) = 1; // number of used cpus
-	*((uint32_t*) (viraddr + 0x30)) = 0; // apicid
-	*((uint64_t*) (viraddr + 0x38)) = file_size;
-	*((uint32_t*) (viraddr + 0x60)) = 1; // numa nodes
+
+	hermit_kernel_arguments_t* kernel_arguments = viraddr + kernel_arguments_offset;
+
+	kernel_arguments->base = phyaddr;
+	kernel_arguments->limit = limit;
+	kernel_arguments->image_size = file_size;
+
+	kernel_arguments->possible_cpus = 1;
+	kernel_arguments->current_boot_id = 0;
+	kernel_arguments->possible_isles = 1;
 
 	// move file to a 2 MB boundary
 	for(size_t va = viraddr+(npages << PAGE_BITS)+displacement-sizeof(uint8_t); va >= viraddr+displacement; va-=sizeof(uint8_t))

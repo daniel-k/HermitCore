@@ -27,6 +27,9 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <hermit.h>
 
 #ifndef __PAGE_H__
 #define __PAGE_H__
