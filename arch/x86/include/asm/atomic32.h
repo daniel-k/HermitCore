@@ -37,6 +37,9 @@
 #ifndef __ARCH_ATOMIC32_H__
 #define __ARCH_ATOMIC32_H__
 
+#include <asm/stddef.h>
+#include <asm/atomic.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
