@@ -4,7 +4,7 @@ set(PACKAGE_VERSION "0.1" CACHE STRING
 set(MAX_CORES "512" CACHE STRING
 	"Maximum number of cores that can be managed")
 
-set(MAX_TASKS "(MAX_CORES*2+2)" CACHE STRING
+set(MAX_TASKS "((MAX_CORES * 2) + 2)" CACHE STRING
 	"Maximum number of tasks")
 
 set(MAX_ISLE "8" CACHE STRING
