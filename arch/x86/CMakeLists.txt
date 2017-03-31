@@ -60,12 +60,11 @@ file(GLOB MM_SOURCES		"mm/*.c")
 # add boot.h as source to mark dependency boot.asm -> boot.h -> apic.c
 add_library(${X86_KERNEL_C_TARGET} OBJECT
 	${KERNEL_SOURCES} ${MM_SOURCES}
-	${CMAKE_BINARY_DIR}/boot.h
-	${CMAKE_BINARY_DIR}/include/hermit/config.h)
+	${GENERATED_CONFIG_DIR}/hermit/boot.h)
 
 target_include_directories(${X86_KERNEL_C_TARGET} BEFORE
 	PUBLIC ${HERMIT_KERNEL_INCLUDES}
-	PRIVATE ${CMAKE_BINARY_DIR})
+	PRIVATE ${GENERATED_CONFIG_DIR})
 
 target_compile_options(${X86_KERNEL_C_TARGET}
 	PRIVATE ${HERMIT_KERNEL_FLAGS})
@@ -73,7 +72,7 @@ target_compile_options(${X86_KERNEL_C_TARGET}
 # assemble boot.asm and dump to C-array in boot.h
 add_custom_command(
 	OUTPUT
-		${CMAKE_BINARY_DIR}/boot.h
+		${GENERATED_CONFIG_DIR}/hermit/boot.h
 	DEPENDS
 		kernel/boot.asm
 	COMMAND
@@ -85,5 +84,5 @@ add_custom_command(
 	COMMAND
 		echo "};" >> boot.h
 	WORKING_DIRECTORY
-		${CMAKE_BINARY_DIR}/
+		${GENERATED_CONFIG_DIR}/hermit/
 	VERBATIM USES_TERMINAL)
