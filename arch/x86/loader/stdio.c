@@ -31,7 +31,7 @@
 
 int koutput_init(void)
 {
-	uart_early_init((char*) mb_info->cmdline);
+	uart_early_init((char*) ((size_t) mb_info->cmdline));
 
 	return 0;
 }

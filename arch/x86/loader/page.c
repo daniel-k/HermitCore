@@ -70,14 +70,6 @@ static size_t* const self[PAGE_LEVELS] = {
 	(size_t *) 0xFFFFFFFFFFE00000,
 	(size_t *) 0xFFFFFFFFFFFFF000
 };
-
-/** An other self-reference for page_map_copy() */
-static size_t * const other[PAGE_LEVELS] = {
-	(size_t *) 0xFFFFFF0000000000,
-	(size_t *) 0xFFFFFFFF80000000,
-	(size_t *) 0xFFFFFFFFFFC00000,
-	(size_t *) 0xFFFFFFFFFFFFE000
-};
 #endif
 
 /** @brief Flush a specific page entry in TLB
