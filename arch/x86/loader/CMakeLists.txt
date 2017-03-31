@@ -44,3 +44,7 @@ add_custom_command(
 
 install(TARGETS arch_x86_loader
 	DESTINATION bin)
+
+# Show include files in IDE
+file(GLOB_RECURSE ARCH_X86_LOADER_INCLUDES "include/*")
+add_custom_target(arch_x86_loader_includes_ide SOURCES ${ARCH_X86_LOADER_INCLUDES})

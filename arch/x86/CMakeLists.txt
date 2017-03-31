@@ -86,3 +86,7 @@ add_custom_command(
 	WORKING_DIRECTORY
 		${GENERATED_CONFIG_DIR}/hermit/
 	VERBATIM USES_TERMINAL)
+
+# Show include files in IDE
+file(GLOB_RECURSE ARCH_X86_INCLUDES "include/*")
+add_custom_target(arch_x86_includes_ide SOURCES ${ARCH_X86_INCLUDES} kernel_arguments.def)
