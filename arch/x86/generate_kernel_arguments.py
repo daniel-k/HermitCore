@@ -142,7 +142,7 @@ def export_c_header(arguments, filename):
 		f.write('#include <asm/stddef.h>\n')
 		f.write('#include <asm/atomic32.h>\n')
 		f.write('#include <asm/multiboot.h>\n')
-		f.write('#else // generic export\n')
+		f.write('#elif !defined(__KERNEL__) // generic export (not Linux kernel)\n')
 		f.write('#include <stdint.h>\n')
 		f.write('#include <unistd.h>\n')
 		f.write('#endif // __hermit__\n')
