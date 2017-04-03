@@ -34,6 +34,14 @@ fi
 # quit if already in path
 echo "$PATH" | grep "${CMAKE_DIR_REL}" &>/dev/null && return
 
+# check if already installed
+if which cmake &> /dev/null ; then
+	if cmake --version | grep "cmake version ${MAJOR}.${MINOR}" &> /dev/null;	 then
+		echo "You already have CMake ${MAJOR}.${MINOR}"
+		return
+	fi
+fi
+
 if [ ! -d "${CMAKE_DIR}" ]
 then
 	echo "-- Downloading CMake"
